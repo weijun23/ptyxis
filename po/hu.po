@@ -1,15 +1,15 @@
 # Hungarian translation for ptyxis.
-# Copyright (C) 2025 Free Software Foundation, Inc.
+# Copyright (C) 2025, 2026 Free Software Foundation, Inc.
 # This file is distributed under the same license as the ptyxis package.
 #
 # grx005 <hunorjani17 at gmail dot com>, 2025.
-# Balázs Úr <ur.balazs at fsf dot hu>, 2025.
+# Balázs Úr <ur.balazs at fsf dot hu>, 2025, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: ptyxis gnome-46\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/chergert/ptyxis/issues\n"
-"POT-Creation-Date: 2025-08-10 23:54+0000\n"
-"PO-Revision-Date: 2025-09-02 01:06+0200\n"
+"POT-Creation-Date: 2024-10-29 21:29+0000\n"
+"PO-Revision-Date: 2026-09-09 18:40+0200\n"
 "Last-Translator: Balázs Úr <ur.balazs at fsf dot hu>\n"
 "Language-Team: Hungarian <openscope at fsf dot hu>\n"
 "Language: hu\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Lokalize 24.12.3\n"
+"X-Generator: Lokalize 25.12.3\n"
 
 #: data/org.gnome.Ptyxis.desktop.in.in:2
 msgid "@APP_NAME@"
@@ -65,8 +65,8 @@ msgid ""
 "Ptyxis is a terminal for GNOME that focuses on ease-of-use in a world of "
 "containers."
 msgstr ""
-"A Ptyxis egy terminál GNOME-hoz, amely a könnyű használhatóságra összpontosít "
-"a konténerek világában."
+"A Ptyxis egy terminál GNOME-hoz, amely a könnyű használhatóságra "
+"összpontosít a konténerek világában."
 
 #: data/org.gnome.Ptyxis.metainfo.xml.in.in:13
 msgid "Features:"
@@ -128,6 +128,12 @@ msgstr "A terminállapok különálló cgroupokban futnak"
 msgid "Terminal inspector to help when writing terminal-based applications"
 msgstr "Terminálvizsgáló, hogy segítsen terminálalapú alkalmazások írásakor"
 
+#. developer_name tag deprecated with Appstream 1.0
+#: data/org.gnome.Ptyxis.metainfo.xml.in.in:32
+#: data/org.gnome.Ptyxis.metainfo.xml.in.in:34
+msgid "Christian Hergert"
+msgstr "Christian Hergert"
+
 #: data/org.gnome.Ptyxis.metainfo.xml.in.in:78
 msgid "A column and row size indicator is displayed when resizing the window"
 msgstr "Oszlop- és sorméretjelző jelenik meg az ablak átméretezésekor"
@@ -139,8 +145,8 @@ msgstr "A konténerek automatikus felfedezésre és megjelenítésre kerülnek"
 #: data/org.gnome.Ptyxis.metainfo.xml.in.in:88
 msgid "Many behaviors of the terminal may be tweaked to user preference"
 msgstr ""
-"A terminál számos viselkedése a felhasználói beállítások szerint finomhangolha"
-"tó"
+"A terminál számos viselkedése a felhasználói beállítások szerint "
+"finomhangolható"
 
 #: data/org.gnome.Ptyxis.metainfo.xml.in.in:93
 msgid "You may rename a tab by providing a prefix to the title"
@@ -167,8 +173,8 @@ msgstr ""
 msgid ""
 "Profiles allow for overriding a number of features such as default container"
 msgstr ""
-"A profilok lehetővé teszik számos funkció felülbírálását, például az alapértel"
-"mezett konténert"
+"A profilok lehetővé teszik számos funkció felülbírálását, például az "
+"alapértelmezett konténert"
 
 #: data/org.gnome.Ptyxis.metainfo.xml.in.in:123
 msgid "The terminal will remind you when you're root on the local system"
@@ -227,8 +233,8 @@ msgid ""
 "Display a visual window highlight when process leader is SSH, sudo, or other "
 "specialized tooling"
 msgstr ""
-"Látható ablakkijelölés megjelenítése, ha a folyamatvezető SSH, sudo vagy más s"
-"peciális eszköz"
+"Látható ablakkijelölés megjelenítése, ha a folyamatvezető SSH, sudo vagy más "
+"speciális eszköz"
 
 #: src/org.gnome.Ptyxis.gschema.xml.in:131
 msgid "Use System Font"
@@ -237,8 +243,8 @@ msgstr "Rendszer betűkészletének használata"
 #: src/org.gnome.Ptyxis.gschema.xml.in:132
 msgid "If the default system monospace font should be used"
 msgstr ""
-"Ha a rendszer alapértelmezett, rögzített szélességű betűkészletét kell használ"
-"ni"
+"Ha a rendszer alapértelmezett, rögzített szélességű betűkészletét kell "
+"használni"
 
 #: src/org.gnome.Ptyxis.gschema.xml.in:137
 msgid "Font Name"
@@ -335,8 +341,8 @@ msgid ""
 "Currently expirmental feature to send accessibility information to screen "
 "readers."
 msgstr ""
-"Jelenleg kísérleti funkció, amely akadálymentesítési információkat küld a képe"
-"rnyőolvasóknak."
+"Jelenleg kísérleti funkció, amely akadálymentesítési információkat küld a "
+"képernyőolvasóknak."
 
 #: src/org.gnome.Ptyxis.gschema.xml.in:219
 msgid "Label"
@@ -474,8 +480,8 @@ msgid ""
 "Setting bold on one of the lower 8 colors in the palette will use bright "
 "variant (upper 8 colors)"
 msgstr ""
-"A palettán lévő alsó 8 szín egyikének félkövérre állítása világos változatot f"
-"og használni (felső 8 szín)"
+"A palettán lévő alsó 8 szín egyikének félkövérre állítása világos változatot "
+"fog használni (felső 8 szín)"
 
 #: src/org.gnome.Ptyxis.gschema.xml.in:317
 msgid "CJK Ambiguous Width"
@@ -581,8 +587,8 @@ msgstr "Terminál visszaállítása és előzmények törlése"
 #: src/org.gnome.Ptyxis.gschema.xml.in:406
 msgid "Reset the terminal state and clear history for misbehaving clients"
 msgstr ""
-"A terminál állapotának visszaállítása és az előzmények törlése a rosszul visel"
-"kedő ügyfeleknél"
+"A terminál állapotának visszaállítása és az előzmények törlése a rosszul "
+"viselkedő ügyfeleknél"
 
 #: src/org.gnome.Ptyxis.gschema.xml.in:411 src/ptyxis-preferences-window.ui:655
 msgid "Search History"
@@ -791,8 +797,8 @@ msgstr "Az alkalmazás beállításainak megjelenítése"
 #: src/ptyxis-application.c:837
 msgid "Use DIR for --tab, --tab-with-profile, --new-window, or -x"
 msgstr ""
-"KÖNYVTÁR használata a --tab, --tab-with-profile, --new-window vagy -x kapcsoló"
-"hoz"
+"KÖNYVTÁR használata a --tab, --tab-with-profile, --new-window vagy -x "
+"kapcsolóhoz"
 
 #: src/ptyxis-application.c:837
 msgid "DIR"
@@ -1148,8 +1154,8 @@ msgstr "Képernyőolvasók engedélyezése"
 msgid ""
 "Permit screen readers such as Orca to read terminal content and typed text"
 msgstr ""
-"Engedélyezés az Orca és hasonló képernyőolvasóknak, hogy felolvassák a terminá"
-"l tartalmát és a begépelt szöveget"
+"Engedélyezés az Orca és hasonló képernyőolvasóknak, hogy felolvassák a "
+"terminál tartalmát és a begépelt szöveget"
 
 #: src/ptyxis-preferences-window.ui:380
 msgid "Bell"
@@ -1489,8 +1495,8 @@ msgstr "Beállítás"
 #: src/ptyxis-shortcut-accel-dialog.ui:89
 msgid "Press Escape to cancel or Backspace to disable."
 msgstr ""
-"Nyomja meg az Escape billentyűt a megszakításhoz, vagy a visszatörlést a letil"
-"táshoz."
+"Nyomja meg az Escape billentyűt a megszakításhoz, vagy a visszatörlést a "
+"letiltáshoz."
 
 #: src/ptyxis-shortcut-row.c:74
 msgid "Set Shortcut"
