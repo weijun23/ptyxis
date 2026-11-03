@@ -132,6 +132,18 @@
       <description>Display a visual window highlight when process leader is SSH, sudo, or other specialized tooling</description>
     </key>
 
+    <key name="highlight-waiting-for-input" type="b">
+      <default>false</default>
+      <summary>Highlight Tab When Waiting For Input</summary>
+      <description>Mark a tab as needing attention when its window title contains one of the strings from waiting-markers. This is useful for spotting when an interactive program, such as an AI agent, has stopped working and is waiting for input.</description>
+    </key>
+
+    <key name="waiting-markers" type="s">
+      <default>'■ ✳ ✶ ✻ ✽ ● █ ▉'</default>
+      <summary>Waiting For Input Markers</summary>
+      <description>Space-separated list of marker strings. A tab is considered to be waiting for input whenever its window title contains any of these markers. Only used when highlight-waiting-for-input is enabled.</description>
+    </key>
+
     <key name="use-system-font" type="b">
       <default>true</default>
       <summary>Use System Font</summary>

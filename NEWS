@@ -1,3 +1,10 @@
+# Ptyxis 50.2
+
+ * tab: optionally flag a tab as needing attention when its terminal is
+   waiting for input, detected from configurable markers in the window title
+   (such as the glyph an AI agent shows while awaiting a reply). Off by
+   default; see the "Tab Highlighting" group in Preferences.
+
 # Ptyxis 50.1
 
  * Fix GNOME CI pipeline which fails on alpha/beta/rc in metainfo

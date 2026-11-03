@@ -425,6 +425,23 @@
         </child>
         <child>
           <object class="AdwPreferencesGroup">
+            <property name="title" translatable="yes">Tab Highlighting</property>
+            <child>
+              <object class="AdwSwitchRow" id="highlight_waiting_for_input">
+                <property name="title" translatable="yes">Highlight When Waiting For Input</property>
+                <property name="subtitle" translatable="yes">Mark a tab as needing attention when its title contains a waiting marker, such as the glyph an AI agent shows while it awaits input</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwEntryRow" id="waiting_markers">
+                <property name="title" translatable="yes">Waiting Markers</property>
+                <property name="sensitive" bind-source="highlight_waiting_for_input" bind-property="active" bind-flags="sync-create"/>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="AdwPreferencesGroup">
             <property name="title" translatable="yes">Scrolling</property>
             <child>
               <object class="AdwComboRow" id="scrollbar_policy">

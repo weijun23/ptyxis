@@ -136,6 +136,8 @@ struct _PtyxisPreferencesWindow
   GListModel           *text_blink_modes;
   AdwSwitchRow         *use_system_font;
   AdwSwitchRow         *visual_bell;
+  AdwSwitchRow         *highlight_waiting_for_input;
+  AdwEntryRow          *waiting_markers;
   GtkListBox           *custom_links_list_box;
 };
 
@@ -920,6 +922,12 @@ ptyxis_preferences_window_constructed (GObject *object)
   g_object_bind_property (settings, "enable-a11y",
                           self->enable_a11y, "active",
                           G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
+  g_object_bind_property (settings, "highlight-waiting-for-input",
+                          self->highlight_waiting_for_input, "active",
+                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
+  g_object_bind_property (settings, "waiting-markers",
+                          self->waiting_markers, "text",
+                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
 
   g_object_bind_property (shortcuts, "new-tab",
                           self->shortcut_new_tab, "accelerator",
@@ -1154,6 +1162,8 @@ ptyxis_preferences_window_class_init (PtyxisPreferencesWindowClass *klass)
   gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, exit_actions);
   gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, font_name);
   gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, font_name_row);
+  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, highlight_waiting_for_input);
+  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, waiting_markers);
   gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, limit_scrollback);
   gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, login_shell);
   gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, opacity_adjustment);

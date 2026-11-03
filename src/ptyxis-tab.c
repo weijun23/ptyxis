@@ -21,6 +21,8 @@
 
 #include "config.h"
 
+#include <string.h>
+
 #include <glib/gi18n.h>
 
 #include <cairo.h>
@@ -73,6 +75,10 @@ struct _PtyxisTab
   PtyxisTabNotify          notify;
   GSignalGroup            *profile_signals;
 
+  /* Parsed waiting-markers setting; when highlight_waiting_enabled and the window
+   * title contains one of these, the tab is flagged as needing attention. */
+  char                   **waiting_markers;
+
   PtyxisTabState           state;
   GPid                     pid;
 
@@ -84,6 +90,8 @@ struct _PtyxisTab
   guint                    forced_exit : 1;
   guint                    ignore_osc_title : 1;
   guint                    ignore_snapshot : 1;
+  guint                    highlight_waiting_enabled : 1;
+  guint                    waiting_for_input : 1;
 
   guint                    inhibit_cookie;
 };
@@ -673,6 +681,82 @@ ptyxis_tab_notify_contains_focus_cb (PtyxisTab               *self,
     }
 }
 
+/* Returns TRUE when the title contains any of the configured "waiting for input"
+ * markers, e.g. the glyph an AI agent places in the title while it is idle and
+ * awaiting a reply. Markers come from the waiting-markers setting. */
+static gboolean
+ptyxis_tab_title_has_waiting_marker (PtyxisTab  *self,
+                                     const char *title)
+{
+  if (self->waiting_markers == NULL || title == NULL || title[0] == 0)
+    return FALSE;
+
+  for (guint i = 0; self->waiting_markers[i] != NULL; i++)
+    {
+      if (self->waiting_markers[i][0] != 0 &&
+          strstr (title, self->waiting_markers[i]) != NULL)
+        return TRUE;
+    }
+
+  return FALSE;
+}
+
+/* Raise the tab's needs-attention state when the window title first gains a
+ * waiting marker. This is designed to complement, not replace, Ptyxis's existing
+ * needs-attention handling: like the process-leader logic we only *raise*
+ * attention, and only for background tabs. We never clear it here — clearing is
+ * left to the existing focus/selection handlers, so we do not override attention
+ * that Ptyxis raised for other reasons. */
+static void
+ptyxis_tab_update_waiting_for_input (PtyxisTab *self)
+{
+  const char *window_title;
+  gboolean waiting;
+
+  g_assert (PTYXIS_IS_TAB (self));
+
+  if (!self->highlight_waiting_enabled)
+    {
+      self->waiting_for_input = FALSE;
+      return;
+    }
+
+  G_GNUC_BEGIN_IGNORE_DEPRECATIONS
+    window_title = vte_terminal_get_window_title (VTE_TERMINAL (self->terminal));
+  G_GNUC_END_IGNORE_DEPRECATIONS
+
+  waiting = ptyxis_tab_title_has_waiting_marker (self, window_title);
+
+  if (waiting && !self->waiting_for_input && !ptyxis_tab_is_active (self))
+    ptyxis_tab_set_needs_attention (self, TRUE);
+
+  self->waiting_for_input = waiting;
+}
+
+static void
+ptyxis_tab_update_waiting_settings_cb (PtyxisTab      *self,
+                                       GParamSpec     *pspec,
+                                       PtyxisSettings *settings)
+{
+  g_autofree char *markers = NULL;
+
+  g_assert (PTYXIS_IS_TAB (self));
+  g_assert (PTYXIS_IS_SETTINGS (settings));
+
+  self->highlight_waiting_enabled = ptyxis_settings_get_highlight_waiting_for_input (settings);
+
+  g_clear_pointer (&self->waiting_markers, g_strfreev);
+  markers = ptyxis_settings_dup_waiting_markers (settings);
+  if (markers != NULL)
+    self->waiting_markers = g_strsplit (markers, " ", -1);
+
+  /* Re-evaluate the current title so toggling the setting (or a marker that is
+   * already present) takes effect immediately. Reset our view so a marker present
+   * right now counts as a fresh transition. */
+  self->waiting_for_input = FALSE;
+  ptyxis_tab_update_waiting_for_input (self);
+}
+
 static void
 ptyxis_tab_notify_window_title_cb (PtyxisTab      *self,
                                    GParamSpec     *pspec,
@@ -682,6 +766,8 @@ ptyxis_tab_notify_window_title_cb (PtyxisTab      *self,
   g_assert (PTYXIS_IS_TERMINAL (terminal));
 
   g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_TITLE]);
+
+  ptyxis_tab_update_waiting_for_input (self);
 }
 
 static void
@@ -977,6 +1063,18 @@ ptyxis_tab_constructed (GObject *object)
                            G_CONNECT_SWAPPED);
   ptyxis_tab_update_inhibit (self);
 
+  g_signal_connect_object (settings,
+                           "notify::highlight-waiting-for-input",
+                           G_CALLBACK (ptyxis_tab_update_waiting_settings_cb),
+                           self,
+                           G_CONNECT_SWAPPED);
+  g_signal_connect_object (settings,
+                           "notify::waiting-markers",
+                           G_CALLBACK (ptyxis_tab_update_waiting_settings_cb),
+                           self,
+                           G_CONNECT_SWAPPED);
+  ptyxis_tab_update_waiting_settings_cb (self, NULL, settings);
+
   self->monitor = ptyxis_tab_monitor_new (self);
 }
 
@@ -1207,6 +1305,7 @@ ptyxis_tab_dispose (GObject *object)
   g_clear_pointer (&self->title_prefix, g_free);
   g_clear_pointer (&self->initial_title, g_free);
   g_clear_pointer (&self->command, g_strfreev);
+  g_clear_pointer (&self->waiting_markers, g_strfreev);
   g_clear_pointer (&self->command_line, g_free);
   g_clear_pointer (&self->program_name, g_free);
 

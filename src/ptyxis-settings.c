@@ -62,6 +62,8 @@ enum {
   PROP_VISUAL_PROCESS_LEADER,
   PROP_WORD_CHAR_EXCEPTIONS,
   PROP_INHIBIT_LOGOUT,
+  PROP_HIGHLIGHT_WAITING_FOR_INPUT,
+  PROP_WAITING_MARKERS,
   N_PROPS
 };
 
@@ -134,6 +136,10 @@ ptyxis_settings_changed_cb (PtyxisSettings *self,
     }
   else if (g_str_equal (key, PTYXIS_SETTING_KEY_WORD_CHAR_EXCEPTIONS))
     g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_WORD_CHAR_EXCEPTIONS]);
+  else if (g_str_equal (key, PTYXIS_SETTING_KEY_HIGHLIGHT_WAITING_FOR_INPUT))
+    g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_HIGHLIGHT_WAITING_FOR_INPUT]);
+  else if (g_str_equal (key, PTYXIS_SETTING_KEY_WAITING_MARKERS))
+    g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_WAITING_MARKERS]);
 }
 
 static void
@@ -252,6 +258,14 @@ ptyxis_settings_get_property (GObject    *object,
       g_value_set_boolean (value, ptyxis_settings_get_visual_process_leader (self));
       break;
 
+    case PROP_HIGHLIGHT_WAITING_FOR_INPUT:
+      g_value_set_boolean (value, ptyxis_settings_get_highlight_waiting_for_input (self));
+      break;
+
+    case PROP_WAITING_MARKERS:
+      g_value_take_string (value, ptyxis_settings_dup_waiting_markers (self));
+      break;
+
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
     }
@@ -361,6 +375,14 @@ ptyxis_settings_set_property (GObject      *object,
 
     case PROP_VISUAL_PROCESS_LEADER:
       ptyxis_settings_set_visual_process_leader (self, g_value_get_boolean (value));
+      break;
+
+    case PROP_HIGHLIGHT_WAITING_FOR_INPUT:
+      ptyxis_settings_set_highlight_waiting_for_input (self, g_value_get_boolean (value));
+      break;
+
+    case PROP_WAITING_MARKERS:
+      ptyxis_settings_set_waiting_markers (self, g_value_get_string (value));
       break;
 
     default:
@@ -560,6 +582,20 @@ ptyxis_settings_class_init (PtyxisSettingsClass *klass)
 
   properties[PROP_WORD_CHAR_EXCEPTIONS] =
     g_param_spec_string (PTYXIS_SETTING_KEY_WORD_CHAR_EXCEPTIONS, NULL, NULL,
+                         NULL,
+                         (G_PARAM_READWRITE |
+                          G_PARAM_EXPLICIT_NOTIFY |
+                          G_PARAM_STATIC_STRINGS));
+
+  properties[PROP_HIGHLIGHT_WAITING_FOR_INPUT] =
+    g_param_spec_boolean (PTYXIS_SETTING_KEY_HIGHLIGHT_WAITING_FOR_INPUT, NULL, NULL,
+                          FALSE,
+                          (G_PARAM_READWRITE |
+                           G_PARAM_EXPLICIT_NOTIFY |
+                           G_PARAM_STATIC_STRINGS));
+
+  properties[PROP_WAITING_MARKERS] =
+    g_param_spec_string (PTYXIS_SETTING_KEY_WAITING_MARKERS, NULL, NULL,
                          NULL,
                          (G_PARAM_READWRITE |
                           G_PARAM_EXPLICIT_NOTIFY |
@@ -807,6 +843,45 @@ ptyxis_settings_set_visual_process_leader (PtyxisSettings *self,
   g_settings_set_boolean (self->settings,
                           PTYXIS_SETTING_KEY_VISUAL_PROCESS_LEADER,
                           visual_process_leader);
+}
+
+gboolean
+ptyxis_settings_get_highlight_waiting_for_input (PtyxisSettings *self)
+{
+  g_return_val_if_fail (PTYXIS_IS_SETTINGS (self), FALSE);
+
+  return g_settings_get_boolean (self->settings, PTYXIS_SETTING_KEY_HIGHLIGHT_WAITING_FOR_INPUT);
+}
+
+void
+ptyxis_settings_set_highlight_waiting_for_input (PtyxisSettings *self,
+                                                 gboolean        highlight_waiting_for_input)
+{
+  g_return_if_fail (PTYXIS_IS_SETTINGS (self));
+
+  g_settings_set_boolean (self->settings,
+                          PTYXIS_SETTING_KEY_HIGHLIGHT_WAITING_FOR_INPUT,
+                          highlight_waiting_for_input);
+}
+
+char *
+ptyxis_settings_dup_waiting_markers (PtyxisSettings *self)
+{
+  g_return_val_if_fail (PTYXIS_IS_SETTINGS (self), NULL);
+
+  return g_settings_get_string (self->settings, PTYXIS_SETTING_KEY_WAITING_MARKERS);
+}
+
+void
+ptyxis_settings_set_waiting_markers (PtyxisSettings *self,
+                                     const char     *waiting_markers)
+{
+  g_return_if_fail (PTYXIS_IS_SETTINGS (self));
+
+  if (waiting_markers == NULL)
+    waiting_markers = "";
+
+  g_settings_set_string (self->settings, PTYXIS_SETTING_KEY_WAITING_MARKERS, waiting_markers);
 }
 
 VteCursorBlinkMode
