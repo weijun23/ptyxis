@@ -48,10 +48,10 @@ static GParamSpec *properties [N_PROPS];
 
 static void
 ptyxis_title_dialog_activate_cb (PtyxisTitleDialog *self,
-                                 GtkEntry          *entry)
+                                 AdwEntryRow         *entry)
 {
   g_assert (PTYXIS_IS_TITLE_DIALOG (self));
-  g_assert (GTK_IS_ENTRY (entry));
+  g_assert (ADW_IS_ENTRY_ROW (entry));
 
   adw_dialog_close (ADW_DIALOG (self));
 }

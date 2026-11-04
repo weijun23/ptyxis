@@ -34,7 +34,7 @@
             <child>
               <object class="AdwEntryRow" id="entry">
                 <property name="title" translatable="yes">Title</property>
-                <signal name="activate" handler="ptyxis_title_dialog_activate_cb" swapped="true"/>
+                <signal name="entry-activated" handler="ptyxis_title_dialog_activate_cb" swapped="true"/>
               </object>
             </child>
             <child>
