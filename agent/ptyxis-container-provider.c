@@ -204,6 +204,7 @@ ptyxis_container_provider_merge (PtyxisContainerProvider *self,
       if (g_ptr_array_find_with_equal_func (containers, container, compare_by_id, &position))
         {
           g_ptr_array_index (priv->containers, i-1) = g_object_ref (g_ptr_array_index (containers, position));
+          g_object_unref (container);
           g_list_model_items_changed (G_LIST_MODEL (self), i-1, 1, 1);
           continue;
         }
