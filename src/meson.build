@@ -1,4 +1,13 @@
+terminal_intent_ipc = gnome.gdbus_codegen('terminal-intent',
+           sources: 'org.freedesktop.Terminal1.xml',
+  interface_prefix: 'org.freedesktop.',
+         namespace: 'Fdo',
+        extra_args: ['--glib-min-required=@0@'.format(glib_req_version)],
+)
+
 ptyxis_sources = [
+  terminal_intent_ipc,
+
   'gdkhsla.c',
   'main.c',
   'ptyxis-add-button-list-item.c',
@@ -32,6 +41,7 @@ ptyxis_sources = [
   'ptyxis-tab.c',
   'ptyxis-tab-monitor.c',
   'ptyxis-terminal.c',
+  'ptyxis-terminal-intent.c',
   'ptyxis-theme-selector.c',
   'ptyxis-title-dialog.c',
   'ptyxis-profile-dialog.c',

@@ -68,6 +68,7 @@ void                ptyxis_application_spawn_async                (PtyxisApplica
                                                                    const char           *last_working_directory_uri,
                                                                    VtePty               *pty,
                                                                    const char * const   *argv,
+                                                                   const char * const   *env,
                                                                    GCancellable         *cancellable,
                                                                    GAsyncReadyCallback   callback,
                                                                    gpointer              user_data);

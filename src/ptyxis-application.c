@@ -34,6 +34,7 @@
 #include "ptyxis-preferences-window.h"
 #include "ptyxis-session.h"
 #include "ptyxis-settings.h"
+#include "ptyxis-terminal-intent.h"
 #include "ptyxis-util.h"
 #include "ptyxis-window.h"
 
@@ -43,22 +44,23 @@
 
 struct _PtyxisApplication
 {
-  AdwApplication       parent_instance;
-  GListStore          *profiles;
-  PtyxisSettings      *settings;
-  PtyxisShortcuts     *shortcuts;
-  char                *next_title_prefix;
-  char                *system_font_name;
-  GDBusProxy          *portal;
-  PtyxisClient        *client;
-  GHashTable          *exited;
-  GVariant            *session;
-  GFileMonitor        *xdg_terminals_list_monitor;
-  guint                has_restored_session : 1;
-  guint                overlay_scrollbars : 1;
-  guint                client_is_fallback : 1;
-  guint                maximize : 1;
-  guint                fullscreen : 1;
+  AdwApplication        parent_instance;
+  GListStore           *profiles;
+  PtyxisSettings       *settings;
+  PtyxisShortcuts      *shortcuts;
+  char                 *next_title_prefix;
+  char                 *system_font_name;
+  GDBusProxy           *portal;
+  PtyxisClient         *client;
+  GHashTable           *exited;
+  GVariant             *session;
+  GFileMonitor         *xdg_terminals_list_monitor;
+  PtyxisTerminalIntent *terminal_intent;
+  guint                 has_restored_session : 1;
+  guint                 overlay_scrollbars : 1;
+  guint                 client_is_fallback : 1;
+  guint                 maximize : 1;
+  guint                 fullscreen : 1;
 };
 
 static void ptyxis_application_about             (GSimpleAction *action,
@@ -1044,6 +1046,48 @@ ptyxis_application_finalize (GObject *object)
   G_OBJECT_CLASS (ptyxis_application_parent_class)->finalize (object);
 }
 
+static gboolean
+ptyxis_application_dbus_register (GApplication     *app,
+                                  GDBusConnection  *connection,
+                                  const char       *path,
+                                  GError          **error)
+{
+  PtyxisApplication *self = (PtyxisApplication *)app;
+
+  g_assert (PTYXIS_IS_APPLICATION (self));
+
+  if (!G_APPLICATION_CLASS (ptyxis_application_parent_class)->dbus_register (app, connection, path, error))
+    return FALSE;
+
+  self->terminal_intent = ptyxis_terminal_intent_new ();
+
+  if (!g_dbus_interface_skeleton_export (G_DBUS_INTERFACE_SKELETON (self->terminal_intent),
+                                         connection,
+                                         path,
+                                         error))
+    return FALSE;
+
+  return TRUE;
+}
+
+static void
+ptyxis_application_dbus_unregister (GApplication    *app,
+                                    GDBusConnection *connection,
+                                    const char      *path)
+{
+  PtyxisApplication *self = PTYXIS_APPLICATION (app);
+
+  if (self->terminal_intent != NULL &&
+      g_dbus_interface_skeleton_has_connection (G_DBUS_INTERFACE_SKELETON (self->terminal_intent),
+                                                connection))
+    g_dbus_interface_skeleton_unexport_from_connection (G_DBUS_INTERFACE_SKELETON (self->terminal_intent),
+                                                        connection);
+
+  g_clear_object (&self->terminal_intent);
+
+  G_APPLICATION_CLASS (ptyxis_application_parent_class)->dbus_unregister (app, connection, path);
+}
+
 static void
 ptyxis_application_get_property (GObject    *object,
                                  guint       prop_id,
@@ -1096,6 +1140,8 @@ ptyxis_application_class_init (PtyxisApplicationClass *klass)
   app_class->startup = ptyxis_application_startup;
   app_class->command_line = ptyxis_application_command_line;
   app_class->open = ptyxis_application_open;
+  app_class->dbus_register = ptyxis_application_dbus_register;
+  app_class->dbus_unregister = ptyxis_application_dbus_unregister;
 
   properties[PROP_CONTAINERS] =
     g_param_spec_object ("containers", NULL, NULL,
@@ -1742,6 +1788,7 @@ typedef struct _Spawn
   char *last_working_directory_uri;
   VtePty *pty;
   char **argv;
+  char **env;
 } Spawn;
 
 static void
@@ -1817,6 +1864,7 @@ ptyxis_application_check_shell_cb (GObject      *object,
                              spawn->last_working_directory_uri,
                              spawn->pty,
                              (const char * const *)spawn->argv,
+                             (const char * const *)spawn->env,
                              g_task_get_cancellable (task),
                              ptyxis_application_spawn_cb,
                              g_object_ref (task));
@@ -1870,6 +1918,7 @@ ptyxis_application_spawn_async (PtyxisApplication   *self,
                                 const char          *last_working_directory_uri,
                                 VtePty              *pty,
                                 const char * const  *argv,
+                                const char * const  *env,
                                 GCancellable        *cancellable,
                                 GAsyncReadyCallback  callback,
                                 gpointer             user_data)
@@ -1893,6 +1942,7 @@ ptyxis_application_spawn_async (PtyxisApplication   *self,
   g_set_object (&spawn->pty, pty);
   g_set_str (&spawn->last_working_directory_uri, last_working_directory_uri);
   spawn->argv = g_strdupv ((char **)argv);
+  spawn->env = g_strdupv ((char **)env);
   g_task_set_task_data (task, spawn, spawn_free);
 
   ptyxis_client_discover_shell_async (self->client,

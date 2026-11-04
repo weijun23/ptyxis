@@ -59,6 +59,7 @@ void                ptyxis_client_spawn_async                (PtyxisClient      
                                                               const char           *last_working_directory_uri,
                                                               VtePty               *pty,
                                                               const char * const   *alt_argv,
+                                                              const char * const   *alt_env,
                                                               GCancellable         *cancellable,
                                                               GAsyncReadyCallback   callback,
                                                               gpointer              user_data);

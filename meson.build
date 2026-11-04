@@ -44,7 +44,7 @@ app_schema_profile_id = '@0@.Profile'.format(app_schema_id)
 app_schema_shortcuts_id = '@0@.Shortcuts'.format(app_schema_id)
 app_schema_shortcuts_path = '@0@Shortcuts/'.format(app_schema_path)
 
-glib_req_version = '2.80'
+glib_req_version = '2.90'
 gtk_req_version = '4.14'
 adwaita_req_version = '1.8'
 json_glib_req_version = '1.6'

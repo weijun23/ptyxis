@@ -603,6 +603,7 @@ ptyxis_client_spawn_async (PtyxisClient        *self,
                            const char          *last_working_directory_uri,
                            VtePty              *pty,
                            const char * const  *alt_argv,
+                           const char * const  *alt_env,
                            GCancellable        *cancellable,
                            GAsyncReadyCallback  callback,
                            gpointer             user_data)
@@ -671,6 +672,16 @@ ptyxis_client_spawn_async (PtyxisClient        *self,
 
   g_snprintf (vte_version, sizeof vte_version, "%u", VTE_VERSION_NUMERIC);
   env = g_environ_setenv (env, "VTE_VERSION", vte_version, TRUE);
+
+  for (guint i = 0; alt_env != NULL && alt_env[i] != NULL; i++)
+    {
+      const char *pair = alt_env[i];
+      const char *eq = strchr (pair, '=');
+      const char *val = eq ? eq + 1 : "";
+      g_autofree char *key = eq ? g_strndup (pair, eq - pair) : g_strdup (pair);
+
+      env = g_environ_setenv (env, key, val, TRUE);
+    }
 
   argv_builder = g_strv_builder_new ();
 
