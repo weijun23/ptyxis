@@ -621,6 +621,7 @@ ptyxis_client_spawn_async (PtyxisClient        *self,
   g_auto(GStrv) full_argv = NULL;
   g_autofd int pty_fd = -1;
   const char *cwd = NULL;
+  gboolean preserve_directory_safe = FALSE;
   char vte_version[32];
   int handle;
 
@@ -712,11 +713,17 @@ ptyxis_client_spawn_async (PtyxisClient        *self,
     }
   else
     {
-      arg0 = g_strdup ("");
+      preserve_directory_safe = TRUE;
+      arg0 = NULL;
       g_strv_builder_add (argv_builder, "sh");
       g_strv_builder_add (argv_builder, "-c");
       g_strv_builder_add (argv_builder, "if [ -x \"$(getent passwd $(whoami) | cut -d : -f 7)\" ]; then exec $(getent passwd $(whoami) | cut -d : -f 7); else exec sh; fi");
     }
+
+  /* TODO: We might want to check with the container that this
+   * is a shell (as opposed to one available on the host).
+   */
+  preserve_directory_safe |= (arg0 != NULL) && ptyxis_is_shell (arg0);
 
   if (arg0 != NULL &&
       ptyxis_profile_get_login_shell (profile) &&
@@ -740,10 +747,7 @@ ptyxis_client_spawn_async (PtyxisClient        *self,
           break;
 
         case PTYXIS_PRESERVE_DIRECTORY_SAFE:
-          /* TODO: We might want to check with the container that this
-           * is a shell (as opposed to one available on the host).
-           */
-          if (!arg0 || !ptyxis_is_shell (arg0))
+          if (!preserve_directory_safe)
             break;
           G_GNUC_FALLTHROUGH;
 
