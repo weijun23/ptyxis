@@ -42,6 +42,7 @@ G_BEGIN_DECLS
 #define PTYXIS_SETTING_KEY_DEFAULT_COLUMNS         "default-columns"
 #define PTYXIS_SETTING_KEY_DEFAULT_ROWS            "default-rows"
 #define PTYXIS_SETTING_KEY_SCROLLBAR_POLICY        "scrollbar-policy"
+#define PTYXIS_SETTING_KEY_SHOW_WINDOW_SIZE        "show-window-size"
 #define PTYXIS_SETTING_KEY_TEXT_BLINK_MODE         "text-blink-mode"
 #define PTYXIS_SETTING_KEY_TOAST_ON_COPY_CLIPBOARD "toast-on-copy-clipboard"
 #define PTYXIS_SETTING_KEY_USE_SYSTEM_FONT         "use-system-font"
@@ -137,6 +138,9 @@ void                    ptyxis_settings_set_restore_window_size     (PtyxisSetti
 PtyxisScrollbarPolicy   ptyxis_settings_get_scrollbar_policy        (PtyxisSettings             *self);
 void                    ptyxis_settings_set_scrollbar_policy        (PtyxisSettings             *self,
                                                                      PtyxisScrollbarPolicy       scrollbar_policy);
+gboolean                ptyxis_settings_get_show_window_size        (PtyxisSettings             *self);
+void                    ptyxis_settings_set_show_window_size        (PtyxisSettings             *self,
+                                                                     gboolean                    show_window_size);
 PtyxisTabMiddleClickBehavior   ptyxis_settings_get_tab_middle_click        (PtyxisSettings               *self);
 void                           ptyxis_settings_set_tab_middle_click        (PtyxisSettings               *self,
                                                                             PtyxisTabMiddleClickBehavior  tab_middle_click);

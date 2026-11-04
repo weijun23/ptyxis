@@ -168,6 +168,12 @@
       <description>If scrollbars should be displayed</description>
     </key>
 
+    <key name="show-window-size" type="b">
+      <default>true</default>
+      <summary>Show window size popup</summary>
+      <description>Show a popup with the terminal grid size when the window is resized</description>
+    </key>
+
     <key name="tab-middle-click" enum="@APP_SCHEMA_ID@.TabMiddleClickBehavior">
       <default>'close'</default>
     </key>

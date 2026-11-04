@@ -54,6 +54,7 @@ enum {
   PROP_DEFAULT_COLUMNS,
   PROP_DEFAULT_ROWS,
   PROP_SCROLLBAR_POLICY,
+  PROP_SHOW_WINDOW_SIZE,
   PROP_TAB_MIDDLE_CLICK,
   PROP_TEXT_BLINK_MODE,
   PROP_TOAST_ON_COPY_CLIPBOARD,
@@ -98,6 +99,8 @@ ptyxis_settings_changed_cb (PtyxisSettings *self,
     g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_CURSOR_BLINK_MODE]);
   else if (g_str_equal (key, PTYXIS_SETTING_KEY_SCROLLBAR_POLICY))
     g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_SCROLLBAR_POLICY]);
+  else if (g_str_equal (key, PTYXIS_SETTING_KEY_SHOW_WINDOW_SIZE))
+    g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_SHOW_WINDOW_SIZE]);
   else if (g_str_equal (key, PTYXIS_SETTING_KEY_TAB_MIDDLE_CLICK))
     g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_TAB_MIDDLE_CLICK]);
   else if (g_str_equal (key, PTYXIS_SETTING_KEY_TEXT_BLINK_MODE))
@@ -228,6 +231,10 @@ ptyxis_settings_get_property (GObject    *object,
       g_value_set_enum (value, ptyxis_settings_get_scrollbar_policy (self));
       break;
 
+    case PROP_SHOW_WINDOW_SIZE:
+      g_value_set_boolean (value, ptyxis_settings_get_show_window_size (self));
+      break;
+
     case PROP_TAB_MIDDLE_CLICK:
       g_value_set_enum (value, ptyxis_settings_get_tab_middle_click (self));
       break;
@@ -337,6 +344,10 @@ ptyxis_settings_set_property (GObject      *object,
 
     case PROP_SCROLLBAR_POLICY:
       ptyxis_settings_set_scrollbar_policy (self, g_value_get_enum (value));
+      break;
+
+    case PROP_SHOW_WINDOW_SIZE:
+      ptyxis_settings_set_show_window_size (self, g_value_get_boolean (value));
       break;
 
     case PROP_TAB_MIDDLE_CLICK:
@@ -513,6 +524,13 @@ ptyxis_settings_class_init (PtyxisSettingsClass *klass)
                        (G_PARAM_READWRITE |
                         G_PARAM_EXPLICIT_NOTIFY |
                         G_PARAM_STATIC_STRINGS));
+
+  properties[PROP_SHOW_WINDOW_SIZE] =
+    g_param_spec_boolean (PTYXIS_SETTING_KEY_SHOW_WINDOW_SIZE, NULL, NULL,
+                          TRUE,
+                          (G_PARAM_READWRITE |
+                           G_PARAM_EXPLICIT_NOTIFY |
+                           G_PARAM_STATIC_STRINGS));
 
   properties[PROP_TAB_MIDDLE_CLICK] =
     g_param_spec_enum (PTYXIS_SETTING_KEY_TAB_MIDDLE_CLICK, NULL, NULL,
@@ -935,6 +953,26 @@ ptyxis_settings_set_scrollbar_policy (PtyxisSettings        *self,
   g_settings_set_enum (self->settings,
                        PTYXIS_SETTING_KEY_SCROLLBAR_POLICY,
                        scrollbar_policy);
+}
+
+void
+ptyxis_settings_set_show_window_size (PtyxisSettings *self,
+                                      gboolean        show_window_size)
+{
+  g_return_if_fail (PTYXIS_IS_SETTINGS (self));
+
+  g_settings_set_boolean (self->settings,
+                          PTYXIS_SETTING_KEY_SHOW_WINDOW_SIZE,
+                          !!show_window_size);
+}
+
+gboolean
+ptyxis_settings_get_show_window_size (PtyxisSettings *self)
+{
+  g_return_val_if_fail (PTYXIS_IS_SETTINGS (self), FALSE);
+
+  return g_settings_get_boolean (self->settings,
+                                 PTYXIS_SETTING_KEY_SHOW_WINDOW_SIZE);
 }
 
 PtyxisTabMiddleClickBehavior

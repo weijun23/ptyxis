@@ -976,6 +976,7 @@ ptyxis_terminal_size_allocate (GtkWidget *widget,
   GtkAllocation revealer_alloc, dnd_alloc;
   GtkBorder padding, margin;
   GtkRoot *root;
+  PtyxisSettings *settings;
   gboolean emit_size_changed = FALSE;
   int column_count;
   int row_count;
@@ -986,7 +987,9 @@ ptyxis_terminal_size_allocate (GtkWidget *widget,
 
   column_count = vte_terminal_get_column_count (VTE_TERMINAL (self));
   row_count = vte_terminal_get_row_count (VTE_TERMINAL (self));
-  emit_size_changed = self->n_columns != column_count || self->n_rows != row_count;
+  settings = ptyxis_application_get_settings (PTYXIS_APPLICATION_DEFAULT);
+  emit_size_changed = (self->n_columns != column_count || self->n_rows != row_count) &&
+                      ptyxis_settings_get_show_window_size (settings);
   self->n_columns = column_count;
   self->n_rows = row_count;
 
