@@ -288,6 +288,23 @@ ptyxis_terminal_setup_context_menu (VteTerminal           *terminal,
       return;
     }
 
+  if (self->terminal_menu == NULL)
+    {
+      GtkWidget *window = gtk_widget_get_ancestor (GTK_WIDGET (self), PTYXIS_TYPE_WINDOW);
+
+      if (window != NULL)
+        {
+          self->terminal_menu = ptyxis_window_create_terminal_menu (PTYXIS_WINDOW (window));
+
+          if (self->terminal_menu != NULL)
+            {
+              gtk_popover_menu_set_menu_model (GTK_POPOVER_MENU (self->popover),
+                                               G_MENU_MODEL (self->terminal_menu));
+              ptyxis_shortcuts_update_menu (self->shortcuts, self->terminal_menu);
+            }
+        }
+    }
+
   ptyxis_terminal_update_clipboard_actions (self);
 
   vte_event_context_get_coordinates (context, &x, &y);
@@ -1358,6 +1375,7 @@ ptyxis_terminal_dispose (GObject *object)
 
   gtk_widget_dispose_template (GTK_WIDGET (self), PTYXIS_TYPE_TERMINAL);
 
+  g_clear_object (&self->terminal_menu);
   g_clear_object (&self->palette);
   g_clear_object (&self->shortcuts);
   g_clear_handle_id (&self->size_dismiss_source, g_source_remove);
@@ -1521,7 +1539,6 @@ ptyxis_terminal_class_init (PtyxisTerminalClass *klass)
   gtk_widget_class_bind_template_child (widget_class, PtyxisTerminal, popover);
   gtk_widget_class_bind_template_child (widget_class, PtyxisTerminal, size_label);
   gtk_widget_class_bind_template_child (widget_class, PtyxisTerminal, size_revealer);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisTerminal, terminal_menu);
 
   gtk_widget_class_bind_template_callback (widget_class, ptyxis_terminal_capture_click_pressed_cb);
   gtk_widget_class_bind_template_callback (widget_class, ptyxis_terminal_capture_key_pressed_cb);
@@ -1559,18 +1576,6 @@ ptyxis_terminal_class_init (PtyxisTerminalClass *klass)
 }
 
 static void
-ptyxis_terminal_popover_shown_cb (GtkWidget      *popover,
-                                  PtyxisTerminal *self)
-{
-  GtkWidget *window;
-
-  window = gtk_widget_get_ancestor (GTK_WIDGET (self), PTYXIS_TYPE_WINDOW);
-
-  if (window != NULL)
-    ptyxis_window_configure_popover (PTYXIS_WINDOW (window), popover);
-}
-
-static void
 ptyxis_terminal_init (PtyxisTerminal *self)
 {
   g_autoptr(GdkContentFormats) formats = NULL;
@@ -1581,9 +1586,6 @@ ptyxis_terminal_init (PtyxisTerminal *self)
   g_set_object (&self->shortcuts, shortcuts);
 
   gtk_widget_init_template (GTK_WIDGET (self));
-
-  g_signal_connect (self->popover, "show",
-                    G_CALLBACK (ptyxis_terminal_popover_shown_cb), self);
 
   g_signal_connect_object (shortcuts,
                            "notify",

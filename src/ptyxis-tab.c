@@ -33,6 +33,7 @@
 #include "ptyxis-tab-private.h"
 #include "ptyxis-terminal-surface.h"
 #include "ptyxis-util.h"
+#include "ptyxis-tabbed-window.h"
 #include "ptyxis-window.h"
 
 struct _PtyxisTab
@@ -99,8 +100,8 @@ ptyxis_tab_is_active (PtyxisTab *self)
 
   g_assert (PTYXIS_IS_TAB (self));
 
-  if ((window = gtk_widget_get_ancestor (GTK_WIDGET (self), PTYXIS_TYPE_WINDOW)))
-    return ptyxis_window_get_active_tab (PTYXIS_WINDOW (window)) == self;
+  if ((window = gtk_widget_get_ancestor (GTK_WIDGET (self), PTYXIS_TYPE_TABBED_WINDOW)))
+    return ptyxis_tabbed_window_get_active_tab (PTYXIS_TABBED_WINDOW (window)) == self;
 
   return FALSE;
 }
@@ -379,7 +380,7 @@ ptyxis_tab_snapshot (GtkWidget   *widget,
 {
   PtyxisTab *self = (PtyxisTab *)widget;
   PtyxisTerminal *terminal;
-  PtyxisWindow *window;
+  PtyxisTabbedWindow *window;
   GdkRGBA bg;
   gboolean animating;
   int width;
@@ -392,15 +393,15 @@ ptyxis_tab_snapshot (GtkWidget   *widget,
     return;
 
   terminal = ptyxis_terminal_surface_get_terminal (self->surface);
-  window = PTYXIS_WINDOW (gtk_widget_get_root (widget));
-  animating = ptyxis_window_is_animating (window);
+  window = PTYXIS_TABBED_WINDOW (gtk_widget_get_root (widget));
+  animating = ptyxis_tabbed_window_is_animating (window);
   width = gtk_widget_get_width (widget);
   height = gtk_widget_get_height (widget);
 
   vte_terminal_get_color_background_for_draw (VTE_TERMINAL (terminal), &bg);
 
   if (animating &&
-      ptyxis_window_get_active_tab (window) == self)
+      ptyxis_tabbed_window_get_active_tab (window) == self)
     {
       if (self->cached_texture == NULL)
         {
@@ -1382,22 +1383,4 @@ ptyxis_tab_grab_focus (PtyxisTab *self)
   g_return_if_fail (PTYXIS_IS_TAB (self));
 
   ptyxis_terminal_surface_grab_focus (self->surface);
-}
-
-void
-ptyxis_tab_set_environment (PtyxisTab          *self,
-                            const char * const *env)
-{
-  g_return_if_fail (PTYXIS_IS_TAB (self));
-
-  ptyxis_terminal_surface_set_environment (self->surface, env);
-}
-
-void
-ptyxis_tab_set_keep_terminal_open (PtyxisTab *self,
-                                   gboolean   keep_terminal_open)
-{
-  g_return_if_fail (PTYXIS_IS_TAB (self));
-
-  ptyxis_terminal_surface_set_keep_terminal_open (self->surface, keep_terminal_open);
 }

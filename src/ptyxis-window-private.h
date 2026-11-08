@@ -33,53 +33,40 @@ typedef struct
   PtyxisShortcuts       *shortcuts;
   PtyxisParkingLot      *parking_lot;
 
-  GtkButton             *new_terminal_button;
-  GtkMenuButton         *new_terminal_menu_button;
-  GtkSeparator          *new_terminal_separator;
   PtyxisFindBar         *find_bar;
   GtkRevealer           *find_bar_revealer;
   AdwHeaderBar          *header_bar;
   GMenu                 *primary_menu;
   GtkMenuButton         *primary_menu_button;
-  AdwTabBar             *tab_bar;
-  GMenu                 *tab_menu;
-  AdwTabOverview        *tab_overview;
-  AdwTabView            *tab_view;
-  GtkWidget             *zoom_label;
-  GtkWidget             *tab_overview_button;
-  GtkWidget             *new_tab_box;
+  AdwToastOverlay       *toasts;
   PtyxisFullscreenBox   *fullscreen_box;
-  GtkStack              *menu_search_stack;
-  GtkSearchEntry        *menu_search;
-  GtkListView           *menu_list_view;
-  GtkFilterListModel    *maybe_containers;
-  GtkCustomFilter       *maybe_containers_filter;
-  GtkFilterListModel    *not_containers;
-  GtkCustomFilter       *not_containers_filter;
 
   GBindingGroup         *profile_bindings;
-  GBindingGroup         *active_tab_bindings;
-  GSignalGroup          *active_tab_signals;
-  GSignalGroup          *selected_page_signals;
+  GBindingGroup         *active_surface_bindings;
+  GSignalGroup          *active_surface_signals;
   PtyxisWindowDressing  *dressing;
   GtkBox                *visual_bell;
   GPropertyAction       *interface_style_action;
 
   guint                  visual_bell_source;
-  guint                  focus_active_tab_source;
 
-  guint                  tab_overview_animating : 1;
   guint                  disposed : 1;
   guint                  single_terminal_mode : 1;
   guint                  is_maximized : 1;
   guint                  is_fullscreen : 1;
   guint                  in_close_request : 1;
-  guint                  reset_nonvisible_from_size_allocate : 1;
 } PtyxisWindowPrivate;
 
 PtyxisWindowPrivate *_ptyxis_window_get_priv       (PtyxisWindow   *self);
 
+void     _ptyxis_window_class_bind_shared_template (GtkWidgetClass *widget_class);
+void     _ptyxis_window_init_after_template        (PtyxisWindow   *self);
+
 void     ptyxis_window_save_size                   (PtyxisWindow   *self);
+
+void     _ptyxis_window_apply_current_settings_to_surface (PtyxisWindow          *self,
+                                                           PtyxisTerminalSurface *surface,
+                                                           PtyxisTerminalSurface *source);
 
 gboolean _ptyxis_window_bind_title_cb              (GBinding       *binding,
                                                     const GValue   *from_value,

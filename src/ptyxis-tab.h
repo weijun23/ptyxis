@@ -86,10 +86,6 @@ void                ptyxis_tab_set_initial_working_directory_uri  (PtyxisTab    
 void                ptyxis_tab_open_uri                           (PtyxisTab            *self,
                                                                    const char           *uri);
 void                ptyxis_tab_grab_focus                         (PtyxisTab            *self);
-void                ptyxis_tab_set_environment                   (PtyxisTab            *self,
-                                                                   const char * const   *env);
-void                ptyxis_tab_set_keep_terminal_open            (PtyxisTab            *self,
-                                                                   gboolean              keep_terminal_open);
 PtyxisTerminalSurface *ptyxis_tab_get_surface                     (PtyxisTab            *self);
 
 G_END_DECLS

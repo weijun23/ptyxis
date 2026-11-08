@@ -50,6 +50,7 @@ ptyxis_sources = [
   'ptyxis-util.c',
   'ptyxis-window-dressing.c',
   'ptyxis-window.c',
+  'ptyxis-tabbed-window.c',
   'eggshell.c',
 ]
 

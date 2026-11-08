@@ -35,6 +35,7 @@
 #include "ptyxis-session.h"
 #include "ptyxis-settings.h"
 #include "ptyxis-terminal-intent.h"
+#include "ptyxis-tabbed-window.h"
 #include "ptyxis-util.h"
 #include "ptyxis-window.h"
 
@@ -84,8 +85,8 @@ static void ptyxis_application_preferences       (GSimpleAction *action,
 static void ptyxis_application_focus_tab_by_uuid (GSimpleAction *action,
                                                   GVariant      *param,
                                                   gpointer       user_data);
-static void ptyxis_application_apply_default_size(PtyxisApplication *self,
-                                                  PtyxisTerminal    *terminal);
+static void ptyxis_application_apply_default_size (PtyxisApplication *self,
+                                                   PtyxisTerminal    *terminal);
 
 static GActionEntry action_entries[] = {
   { "about", ptyxis_application_about },
@@ -225,15 +226,15 @@ ptyxis_application_open (GApplication  *app,
     }
 
   if (window == NULL)
-    window = ptyxis_window_new_empty ();
+    window = ptyxis_application_new_window_empty (self);
 
   profile = ptyxis_application_dup_default_profile (self);
 
   for (guint i = 0; i < n_files; i++)
     {
       g_autofree char *uri = g_file_get_uri (files[i]);
-      PtyxisTerminal *terminal = NULL;
-      PtyxisTab *tab = NULL;
+      PtyxisTerminalSurface *surface;
+      PtyxisTerminal *terminal;
 
       if (g_file_has_uri_scheme (files[i], "sftp"))
         {
@@ -299,23 +300,23 @@ ptyxis_application_open (GApplication  *app,
           argv = g_strv_builder_end (command_builder);
           cwd = g_get_home_dir ();
 
-          tab = ptyxis_window_add_tab_for_command (window, NULL, (const char * const *)argv, cwd);
-          terminal = ptyxis_tab_get_terminal (tab);
+          surface = ptyxis_window_add_terminal (window, NULL);
+          ptyxis_terminal_surface_set_command (surface, (const char * const *)argv);
 
+          if (!ptyxis_str_empty0 (cwd))
+            ptyxis_terminal_surface_set_previous_working_directory_uri (surface, cwd);
+
+          terminal = ptyxis_terminal_surface_get_terminal (surface);
           ptyxis_application_apply_default_size (self, terminal);
         }
       else
         {
-          tab = ptyxis_tab_new (profile);
-          terminal = ptyxis_tab_get_terminal (tab);
+          surface = ptyxis_window_add_terminal (window, profile);
+          ptyxis_terminal_surface_set_initial_working_directory_uri (surface, uri);
 
+          terminal = ptyxis_terminal_surface_get_terminal (surface);
           ptyxis_application_apply_default_size (self, terminal);
-          ptyxis_tab_set_initial_working_directory_uri (tab, uri);
-          ptyxis_window_add_tab (window, tab);
         }
-
-      if (i == 0)
-        ptyxis_window_set_active_tab (window, tab);
     }
 
   gtk_window_present (GTK_WINDOW (window));
@@ -342,11 +343,16 @@ ptyxis_application_activate (GApplication *app)
 
   if (!ptyxis_application_restore (self))
     {
-      PtyxisWindow *window = ptyxis_window_new ();
-      PtyxisTab *tab = ptyxis_window_get_active_tab (window);
+      PtyxisWindow *window;
+      PtyxisTerminalSurface *surface;
 
-      ptyxis_tab_set_title_prefix (tab, self->next_title_prefix);
-      ptyxis_tab_set_ignore_osc_title (tab, should_ignore_osc_title (self, self->next_title_prefix));
+      window = ptyxis_application_new_window (self);
+
+      surface = ptyxis_window_get_active_surface (window);
+
+      ptyxis_terminal_surface_set_title_prefix (surface, self->next_title_prefix);
+      ptyxis_terminal_surface_set_ignore_osc_title (surface, should_ignore_osc_title (self, self->next_title_prefix));
+
       g_clear_pointer (&self->next_title_prefix, g_free);
 
       maybe_maximize_or_fullscreen (self, window);
@@ -515,48 +521,57 @@ ptyxis_application_command_line (GApplication            *app,
       if (new_tab)
         {
           PtyxisWindow *window = get_current_window (self);
-          PtyxisTab *tab;
+          PtyxisTerminalSurface *surface;
 
           if (window == NULL)
-            window = ptyxis_window_new_empty ();
+            window = ptyxis_application_new_window_empty (self);
 
-          tab = ptyxis_window_add_tab_for_command (window, NULL, (const char * const *)argv, cwd_uri);
+          surface = ptyxis_window_add_terminal (window, NULL);
+          ptyxis_terminal_surface_set_command (surface, (const char * const *)argv);
+          ptyxis_terminal_surface_set_title_prefix (surface, title);
+          ptyxis_terminal_surface_set_ignore_osc_title (surface, should_ignore_osc_title (self, title));
+          ptyxis_terminal_surface_set_initial_working_directory_uri (surface, cwd_uri);
 
-          ptyxis_tab_set_title_prefix (tab, title);
-          ptyxis_tab_set_ignore_osc_title (tab, should_ignore_osc_title (self, title));
-          ptyxis_tab_set_initial_working_directory_uri (tab, cwd_uri);
-          ptyxis_window_set_active_tab (window, tab);
+          if (!ptyxis_str_empty0 (cwd_uri))
+            ptyxis_terminal_surface_set_previous_working_directory_uri (surface, cwd_uri);
+
           gtk_window_present (GTK_WINDOW (window));
         }
       else if (new_tab_with_profile)
         {
           g_autoptr(PtyxisProfile) profile = ptyxis_application_dup_profile (self, new_tab_with_profile);
           PtyxisWindow *window = get_current_window (self);
-          PtyxisTab *tab;
+          PtyxisTerminalSurface *surface;
 
           if (window == NULL || new_window)
-            window = ptyxis_window_new_empty ();
+            window = ptyxis_application_new_window_empty (self);
 
-          tab = ptyxis_window_add_tab_for_command (window, profile, (const char * const *)argv, cwd_uri);
+          surface = ptyxis_window_add_terminal (window, profile);
+          ptyxis_terminal_surface_set_command (surface, (const char * const *)argv);
+          ptyxis_terminal_surface_set_title_prefix (surface, title);
+          ptyxis_terminal_surface_set_ignore_osc_title (surface, should_ignore_osc_title (self, title));
+          ptyxis_terminal_surface_set_initial_working_directory_uri (surface, cwd_uri);
 
-          ptyxis_tab_set_title_prefix (tab, title);
-          ptyxis_tab_set_ignore_osc_title (tab, should_ignore_osc_title (self, title));
-          ptyxis_tab_set_initial_working_directory_uri (tab, cwd_uri);
-          ptyxis_window_set_active_tab (window, tab);
+          if (!ptyxis_str_empty0 (cwd_uri))
+            ptyxis_terminal_surface_set_previous_working_directory_uri (surface, cwd_uri);
+
           gtk_window_present (GTK_WINDOW (window));
         }
       else if (new_window)
         {
           PtyxisWindow *window;
-          PtyxisTab *tab;
+          PtyxisTerminalSurface *surface;
 
-          window = ptyxis_window_new_empty ();
-          tab = ptyxis_window_add_tab_for_command (window, NULL, (const char * const *)argv, cwd_uri);
+          window = ptyxis_application_new_window_empty (self);
 
-          ptyxis_tab_set_title_prefix (tab, title);
-          ptyxis_tab_set_ignore_osc_title (tab, should_ignore_osc_title (self, title));
-          ptyxis_tab_set_initial_working_directory_uri (tab, cwd_uri);
-          ptyxis_window_set_active_tab (window, tab);
+          surface = ptyxis_window_add_terminal (window, NULL);
+          ptyxis_terminal_surface_set_command (surface, (const char * const *)argv);
+          ptyxis_terminal_surface_set_title_prefix (surface, title);
+          ptyxis_terminal_surface_set_ignore_osc_title (surface, should_ignore_osc_title (self, title));
+          ptyxis_terminal_surface_set_initial_working_directory_uri (surface, cwd_uri);
+
+          if (!ptyxis_str_empty0 (cwd_uri))
+            ptyxis_terminal_surface_set_previous_working_directory_uri (surface, cwd_uri);
 
           maybe_maximize_or_fullscreen (self, window);
 
@@ -565,13 +580,13 @@ ptyxis_application_command_line (GApplication            *app,
       else
         {
           PtyxisWindow *window;
-          PtyxisTab *tab;
+          PtyxisTerminalSurface *surface;
 
-          window = ptyxis_window_new_for_command (NULL, (const char * const *)argv, cwd_uri);
-          tab = ptyxis_window_get_active_tab (window);
+          window = ptyxis_application_new_window_for_command (self, NULL, (const char * const *)argv, cwd_uri);
+          surface = ptyxis_window_get_active_surface (window);
 
-          ptyxis_tab_set_title_prefix (tab, title);
-          ptyxis_tab_set_ignore_osc_title (tab, should_ignore_osc_title (self, title));
+          ptyxis_terminal_surface_set_title_prefix (surface, title);
+          ptyxis_terminal_surface_set_ignore_osc_title (surface, should_ignore_osc_title (self, title));
 
           maybe_maximize_or_fullscreen (self, window);
 
@@ -583,20 +598,17 @@ ptyxis_application_command_line (GApplication            *app,
     {
       g_autoptr(PtyxisProfile) profile = ptyxis_application_dup_default_profile (self);
       PtyxisWindow *window = get_current_window (self);
-      PtyxisTab *tab = ptyxis_tab_new (profile);
-      PtyxisTerminal *terminal = ptyxis_tab_get_terminal (tab);
+      PtyxisTerminalSurface *surface;
 
       if (window == NULL || new_window)
-        {
-          window = ptyxis_window_new_empty ();
-          ptyxis_application_apply_default_size (self, terminal);
-        }
+        window = ptyxis_application_new_window_empty (self);
 
-      ptyxis_tab_set_initial_working_directory_uri (tab, cwd_uri);
-      ptyxis_tab_set_title_prefix (tab, title);
-      ptyxis_tab_set_ignore_osc_title (tab, should_ignore_osc_title (self, title));
-      ptyxis_window_add_tab (window, tab);
-      ptyxis_window_set_active_tab (window, tab);
+      surface = ptyxis_window_add_terminal (window, profile);
+      ptyxis_application_apply_default_size (self,
+                                             PTYXIS_TERMINAL (ptyxis_terminal_surface_get_terminal (surface)));
+      ptyxis_terminal_surface_set_initial_working_directory_uri (surface, cwd_uri);
+      ptyxis_terminal_surface_set_title_prefix (surface, title);
+      ptyxis_terminal_surface_set_ignore_osc_title (surface, should_ignore_osc_title (self, title));
 
       gtk_window_present (GTK_WINDOW (window));
     }
@@ -604,20 +616,17 @@ ptyxis_application_command_line (GApplication            *app,
     {
       g_autoptr(PtyxisProfile) profile = ptyxis_application_dup_profile (self, new_tab_with_profile);
       PtyxisWindow *window = get_current_window (self);
-      PtyxisTab *tab = ptyxis_tab_new (profile);
-      PtyxisTerminal *terminal = ptyxis_tab_get_terminal (tab);
+      PtyxisTerminalSurface *surface;
 
       if (window == NULL || new_window)
-        {
-          window = ptyxis_window_new_empty ();
-          ptyxis_application_apply_default_size (self, terminal);
-        }
+        window = ptyxis_application_new_window_empty (self);
 
-      ptyxis_tab_set_initial_working_directory_uri (tab, cwd_uri);
-      ptyxis_tab_set_title_prefix (tab, title);
-      ptyxis_tab_set_ignore_osc_title (tab, should_ignore_osc_title (self, title));
-      ptyxis_window_add_tab (window, tab);
-      ptyxis_window_set_active_tab (window, tab);
+      surface = ptyxis_window_add_terminal (window, profile);
+      ptyxis_application_apply_default_size (self,
+                                             PTYXIS_TERMINAL (ptyxis_terminal_surface_get_terminal (surface)));
+      ptyxis_terminal_surface_set_initial_working_directory_uri (surface, cwd_uri);
+      ptyxis_terminal_surface_set_title_prefix (surface, title);
+      ptyxis_terminal_surface_set_ignore_osc_title (surface, should_ignore_osc_title (self, title));
 
       gtk_window_present (GTK_WINDOW (window));
     }
@@ -625,8 +634,7 @@ ptyxis_application_command_line (GApplication            *app,
     {
       g_autoptr(PtyxisProfile) profile = ptyxis_application_dup_default_profile (self);
       PtyxisWindow *window = get_current_window (self);
-      PtyxisTerminal *terminal;
-      PtyxisTab *tab;
+      PtyxisTerminalSurface *surface;
 
       /* If the request to create a new-window was not combined with other
        * actions above, and we restored a session, then we will consider the
@@ -643,20 +651,15 @@ ptyxis_application_command_line (GApplication            *app,
           return EXIT_SUCCESS;
         }
 
-      tab = ptyxis_tab_new (profile);
-      terminal = ptyxis_tab_get_terminal (tab);
-
       if (window == NULL || !did_restore)
-        {
-          window = ptyxis_window_new_empty ();
-          ptyxis_application_apply_default_size (self, terminal);
-        }
+        window = ptyxis_application_new_window_empty (self);
 
-      ptyxis_tab_set_initial_working_directory_uri (tab, cwd_uri);
-      ptyxis_tab_set_title_prefix (tab, title);
-      ptyxis_tab_set_ignore_osc_title (tab, should_ignore_osc_title (self, title));
-      ptyxis_window_add_tab (window, tab);
-      ptyxis_window_set_active_tab (window, tab);
+      surface = ptyxis_window_add_terminal (window, profile);
+      ptyxis_application_apply_default_size (self,
+                                             PTYXIS_TERMINAL (ptyxis_terminal_surface_get_terminal (surface)));
+      ptyxis_terminal_surface_set_initial_working_directory_uri (surface, cwd_uri);
+      ptyxis_terminal_surface_set_title_prefix (surface, title);
+      ptyxis_terminal_surface_set_ignore_osc_title (surface, should_ignore_osc_title (self, title));
 
       maybe_maximize_or_fullscreen (self, window);
 
@@ -1207,7 +1210,6 @@ ptyxis_application_init (PtyxisApplication *self)
 
     /* Standalone (single instance mode) */
     { "standalone", 's', 0, G_OPTION_ARG_NONE, NULL, N_("Start a new instance, ignoring existing instances") },
-
     { "title", 'T', 0, G_OPTION_ARG_STRING, NULL, N_("Set title for new tab") },
     { "maximize", 0, 0, G_OPTION_ARG_NONE, NULL, N_("Maximize a newly created window") },
     { "fullscreen", 0, 0, G_OPTION_ARG_NONE, NULL, N_("Fullscreen a newly created window") },
@@ -1258,11 +1260,28 @@ ptyxis_application_edit_profile (GSimpleAction *action,
 
   profile_uuid = g_variant_get_string (param, NULL);
 
-  if ((ptyxis_application_dup_profile (self, profile_uuid)))
+  if ((profile = ptyxis_application_dup_profile (self, profile_uuid)))
     {
-      PtyxisPreferencesWindow *window = ptyxis_preferences_window_get_default ();
+      GtkWindow *active_window = gtk_application_get_active_window (GTK_APPLICATION (self));
 
-      ptyxis_preferences_window_edit_profile (window, profile);
+      if (active_window != NULL && PTYXIS_IS_WINDOW (active_window))
+        {
+          PtyxisWindow *win = PTYXIS_WINDOW (active_window);
+
+          gtk_widget_activate_action (GTK_WIDGET (win), "win.preferences", NULL);
+
+          for (const GList *iter = gtk_application_get_windows (GTK_APPLICATION (self));
+               iter != NULL;
+               iter = iter->next)
+            {
+              if (PTYXIS_IS_PREFERENCES_WINDOW (iter->data))
+                {
+                  ptyxis_preferences_window_edit_profile (PTYXIS_PREFERENCES_WINDOW (iter->data),
+                                                          profile);
+                  return;
+                }
+            }
+        }
     }
 }
 
@@ -1362,7 +1381,6 @@ generate_debug_info (PtyxisApplication *self)
 
   for (const GList *iter = windows; iter; iter = iter->next)
     {
-      g_autoptr(GListModel) pages = NULL;
       GtkWindow *window = iter->data;
       GskRenderer *renderer;
       GdkSurface *surface;
@@ -1373,8 +1391,7 @@ generate_debug_info (PtyxisApplication *self)
       if (!PTYXIS_IS_WINDOW (window))
         continue;
 
-      pages = ptyxis_window_list_pages (PTYXIS_WINDOW (window));
-      n_pages = g_list_model_get_n_items (pages);
+      n_pages = ptyxis_window_get_n_pages (PTYXIS_WINDOW (window));
 
       renderer = gtk_native_get_renderer (GTK_NATIVE (window));
       surface = gtk_native_get_surface (GTK_NATIVE (window));
@@ -1488,14 +1505,15 @@ ptyxis_application_preferences (GSimpleAction *action,
                                 GVariant      *param,
                                 gpointer       user_data)
 {
-  PtyxisPreferencesWindow *window;
   PtyxisApplication *self = user_data;
+  GtkWindow *active_window;
 
   g_assert (PTYXIS_IS_APPLICATION (self));
 
-  window = ptyxis_preferences_window_get_default ();
-  gtk_application_add_window (GTK_APPLICATION (self), GTK_WINDOW (window));
-  gtk_window_present (GTK_WINDOW (window));
+  active_window = gtk_application_get_active_window (GTK_APPLICATION (self));
+
+  if (active_window != NULL && PTYXIS_IS_WINDOW (active_window))
+    gtk_widget_activate_action (GTK_WIDGET (active_window), "win.preferences", NULL);
 }
 
 static void
@@ -1528,7 +1546,7 @@ ptyxis_application_new_window_action (GSimpleAction *action,
   if (!has_windows && ptyxis_application_restore (self))
     return;
 
-  window = ptyxis_window_new ();
+  window = ptyxis_application_new_window (self);
   gtk_application_add_window (GTK_APPLICATION (self), GTK_WINDOW (window));
   gtk_window_present (GTK_WINDOW (window));
 }
@@ -1541,7 +1559,6 @@ ptyxis_application_new_tab_action (GSimpleAction *action,
   PtyxisApplication *self = user_data;
   g_autoptr(PtyxisProfile) profile = NULL;
   PtyxisWindow *window;
-  PtyxisTab *tab;
 
   g_assert (!action || G_IS_SIMPLE_ACTION (action));
   g_assert (PTYXIS_IS_APPLICATION (self));
@@ -1549,13 +1566,10 @@ ptyxis_application_new_tab_action (GSimpleAction *action,
   window = get_current_window (self);
 
   if (window == NULL)
-    window = ptyxis_window_new_empty ();
+    window = ptyxis_application_new_window_empty (self);
 
   profile = ptyxis_application_dup_default_profile (self);
-  tab = ptyxis_tab_new (profile);
-
-  ptyxis_window_add_tab (window, tab);
-  ptyxis_window_set_active_tab (window, tab);
+  ptyxis_window_add_terminal (window, profile);
 
   gtk_window_present (GTK_WINDOW (window));
 }
@@ -2157,7 +2171,7 @@ ptyxis_application_focus_tab_by_uuid (GSimpleAction *action,
     {
       if (PTYXIS_IS_WINDOW (windows->data))
         {
-          if (ptyxis_window_focus_tab_by_uuid (windows->data, uuid))
+          if (ptyxis_window_focus_by_uuid (windows->data, uuid))
             break;
         }
     }
@@ -2260,6 +2274,44 @@ ptyxis_application_get_overlay_scrollbars (PtyxisApplication *self)
   g_return_val_if_fail (PTYXIS_IS_APPLICATION (self), FALSE);
 
   return self->overlay_scrollbars;
+}
+
+PtyxisWindow *
+ptyxis_application_new_window (PtyxisApplication *self)
+{
+  return ptyxis_application_new_window_for_profile (self, NULL);
+}
+
+PtyxisWindow *
+ptyxis_application_new_window_empty (PtyxisApplication *self)
+{
+  g_return_val_if_fail (PTYXIS_IS_APPLICATION (self), NULL);
+
+  return g_object_new (PTYXIS_TYPE_TABBED_WINDOW,
+                       "application", self,
+                       NULL);
+}
+
+PtyxisWindow *
+ptyxis_application_new_window_for_profile (PtyxisApplication *self,
+                                           PtyxisProfile     *profile)
+{
+  g_return_val_if_fail (PTYXIS_IS_APPLICATION (self), NULL);
+
+  return PTYXIS_WINDOW (ptyxis_tabbed_window_new_for_profile (profile));
+}
+
+PtyxisWindow *
+ptyxis_application_new_window_for_command (PtyxisApplication  *self,
+                                           PtyxisProfile      *profile,
+                                           const char * const *argv,
+                                           const char         *cwd_uri)
+{
+  g_return_val_if_fail (PTYXIS_IS_APPLICATION (self), NULL);
+  g_return_val_if_fail (argv != NULL, NULL);
+  g_return_val_if_fail (argv[0] != NULL, NULL);
+
+  return PTYXIS_WINDOW (ptyxis_tabbed_window_new_for_command (profile, argv, cwd_uri));
 }
 
 const char *

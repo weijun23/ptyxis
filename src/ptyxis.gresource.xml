@@ -18,7 +18,8 @@
     <file preprocess="xml-stripblanks">ptyxis-theme-selector.ui</file>
     <file preprocess="xml-stripblanks">ptyxis-title-dialog.ui</file>
     <file preprocess="xml-stripblanks">ptyxis-profile-dialog.ui</file>
-    <file preprocess="xml-stripblanks">ptyxis-window.ui</file>
+    <file preprocess="xml-stripblanks">ptyxis-tabbed-terminal-menu.ui</file>
+    <file preprocess="xml-stripblanks">ptyxis-tabbed-window.ui</file>
 
     <!-- Icons -->
     <file preprocess="xml-stripblanks">icons/enter-keyboard-shortcut.svg</file>

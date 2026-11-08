@@ -20,7 +20,7 @@
 <interface>
   <requires lib="gtk" version="4.0"/>
   <requires lib="Adw" version="1.0"/>
-  <template class="PtyxisWindow" parent="AdwApplicationWindow">
+  <template class="PtyxisTabbedWindow" parent="PtyxisWindow">
     <style>
       <class name="ptyxis-window"/>
     </style>
@@ -33,7 +33,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="primary-menu" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(win.primary-menu)</property>
@@ -43,7 +43,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="tab-menu" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(win.tab-menu)</property>
@@ -53,7 +53,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="set-title" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(win.set-title)</property>
@@ -63,7 +63,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="search" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(win.search)</property>
@@ -73,7 +73,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="new-window" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(win.new-window)</property>
@@ -84,7 +84,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="new-tab" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(win.new-tab)</property>
@@ -95,7 +95,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="undo-close-tab" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(win.undo-close-tab)</property>
@@ -105,7 +105,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="tab-overview" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(win.tab-overview)</property>
@@ -115,7 +115,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="preferences" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(win.preferences)</property>
@@ -125,7 +125,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="show-keyboard-shortcuts" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(win.show-keyboard-shortcuts)</property>
@@ -135,7 +135,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="zoom-out" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(win.zoom-out)</property>
@@ -146,7 +146,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="zoom-one" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(win.zoom-one)</property>
@@ -157,7 +157,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="zoom-in" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(win.zoom-in)</property>
@@ -168,7 +168,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="toggle-fullscreen" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(win.toggle-fullscreen)</property>
@@ -178,7 +178,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="move-next-tab" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(page.next)</property>
@@ -188,7 +188,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="move-previous-tab" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(page.previous)</property>
@@ -198,7 +198,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="move-tab-left" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(page.move-left)</property>
@@ -208,7 +208,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="move-tab-right" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(page.move-right)</property>
@@ -218,7 +218,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="detach-tab" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(page.detach)</property>
@@ -228,7 +228,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="close-tab" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(page.close)</property>
@@ -238,7 +238,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="close-other-tabs" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(page.close-others)</property>
@@ -248,7 +248,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="close-window" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(window.close)</property>
@@ -258,7 +258,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="focus-tab-1" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(tab.focus)</property>
@@ -269,7 +269,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="focus-tab-2" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(tab.focus)</property>
@@ -280,7 +280,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="focus-tab-3" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(tab.focus)</property>
@@ -291,7 +291,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="focus-tab-4" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(tab.focus)</property>
@@ -302,7 +302,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="focus-tab-5" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(tab.focus)</property>
@@ -313,7 +313,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="focus-tab-6" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(tab.focus)</property>
@@ -324,7 +324,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="focus-tab-7" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(tab.focus)</property>
@@ -335,7 +335,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="focus-tab-8" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(tab.focus)</property>
@@ -346,7 +346,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="focus-tab-9" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(tab.focus)</property>
@@ -357,7 +357,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="focus-tab-10" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(tab.focus)</property>
@@ -368,7 +368,7 @@
           <object class="GtkShortcut">
             <binding name="trigger">
               <lookup name="focus-tab-last" type="PtyxisShortcuts">
-                <lookup name="shortcuts">PtyxisWindow</lookup>
+                <lookup name="shortcuts">PtyxisTabbedWindow</lookup>
               </lookup>
             </binding>
             <property name="action">action(tab.focus)</property>
@@ -383,8 +383,8 @@
           <class name="window-contents"/>
         </style>
         <property name="enable-new-tab">true</property>
-        <signal name="notify::open" handler="ptyxis_window_tab_overview_notify_open_cb" swapped="1" after="1"/>
-        <signal name="create-tab" handler="ptyxis_window_tab_overview_create_tab_cb" swapped="1"/>
+        <signal name="notify::open" handler="ptyxis_tabbed_window_tab_overview_notify_open_cb" swapped="1" after="1"/>
+        <signal name="create-tab" handler="ptyxis_tabbed_window_tab_overview_create_tab_cb" swapped="1"/>
         <property name="view">tab_view</property>
         <property name="child">
           <object class="PtyxisFullscreenBox" id="fullscreen_box">
@@ -402,14 +402,14 @@
                         <style>
                           <class name="main-header-bar"/>
                         </style>
-                        <property name="show-start-title-buttons" bind-source="PtyxisWindow" bind-property="fullscreened" bind-flags="sync-create|invert-boolean"/>
-                        <property name="show-end-title-buttons" bind-source="PtyxisWindow" bind-property="fullscreened" bind-flags="sync-create|invert-boolean"/>
+                        <property name="show-start-title-buttons" bind-source="PtyxisTabbedWindow" bind-property="fullscreened" bind-flags="sync-create|invert-boolean"/>
+                        <property name="show-end-title-buttons" bind-source="PtyxisTabbedWindow" bind-property="fullscreened" bind-flags="sync-create|invert-boolean"/>
                         <child type="end">
                           <object class="GtkButton" id="restore_button">
                             <property name="tooltip-text" translatable="yes">Leave Fullscreen</property>
                             <property name="icon-name">view-restore-symbolic</property>
                             <property name="action-name">win.unfullscreen</property>
-                            <property name="visible" bind-source="PtyxisWindow" bind-property="fullscreened" bind-flags="sync-create"/>
+                            <property name="visible" bind-source="PtyxisTabbedWindow" bind-property="fullscreened" bind-flags="sync-create"/>
                           </object>
                         </child>
                         <child type="start">
@@ -455,8 +455,8 @@
                                             <property name="margin-start">6</property>
                                             <property name="margin-end">6</property>
                                             <property name="placeholder-text" translatable="yes">Filter…</property>
-                                            <signal name="activate" handler="ptyxis_window_menu_search_activate_cb" swapped="true"/>
-                                            <signal name="stop-search" handler="ptyxis_window_menu_stop_search" swapped="true"/>
+                                            <signal name="activate" handler="ptyxis_tabbed_window_menu_search_activate_cb" swapped="true"/>
+                                            <signal name="stop-search" handler="ptyxis_tabbed_window_menu_stop_search" swapped="true"/>
                                           </object>
                                         </child>
                                         <child>
@@ -477,10 +477,10 @@
                                                     <child>
                                                       <object class="GtkListView" id="menu_list_view">
                                                         <property name="single-click-activate">true</property>
-                                                        <signal name="activate" handler="ptyxis_window_menu_activate_cb" swapped="true"/>
+                                                        <signal name="activate" handler="ptyxis_tabbed_window_menu_activate_cb" swapped="true"/>
                                                         <property name="model">
                                                           <object class="GtkNoSelection">
-                                                            <signal name="notify::n-items" handler="ptyxis_window_notify_menu_n_items_cb" swapped="true"/>
+                                                            <signal name="notify::n-items" handler="ptyxis_tabbed_window_notify_menu_n_items_cb" swapped="true"/>
                                                             <property name="model">
                                                               <object class="GtkFlattenListModel">
                                                                 <property name="model">
@@ -491,7 +491,7 @@
                                                                         <property name="filter">
                                                                           <object class="GtkStringFilter">
                                                                             <property name="expression">
-                                                                              <closure function="ptyxis_window_get_container_title" type="gchararray" swapped="true"/>
+                                                                              <closure function="ptyxis_tabbed_window_get_container_title" type="gchararray" swapped="true"/>
                                                                             </property>
                                                                             <binding name="search">
                                                                               <lookup name="text">menu_search</lookup>
@@ -516,17 +516,17 @@
                                                                         <property name="model">
                                                                           <object class="PtyxisGatedListModel">
                                                                             <binding name="gated">
-                                                                              <closure function="ptyxis_window_check_singular" type="gboolean">
+                                                                              <closure function="ptyxis_tabbed_window_check_singular" type="gboolean">
                                                                                 <lookup name="n-items" type="GListStore">
                                                                                   <lookup name="profiles" type="PtyxisApplication">
-                                                                                    <lookup name="application">PtyxisWindow</lookup>
+                                                                                    <lookup name="application">PtyxisTabbedWindow</lookup>
                                                                                   </lookup>
                                                                                 </lookup>
                                                                               </closure>
                                                                             </binding>
                                                                             <binding name="model">
                                                                               <lookup name="profiles" type="PtyxisApplication">
-                                                                                <lookup name="application">PtyxisWindow</lookup>
+                                                                                <lookup name="application">PtyxisTabbedWindow</lookup>
                                                                               </lookup>
                                                                             </binding>
                                                                           </object>
@@ -538,7 +538,7 @@
                                                                         <property name="filter">
                                                                           <object class="GtkStringFilter">
                                                                             <property name="expression">
-                                                                              <closure function="ptyxis_window_get_container_title" type="gchararray" swapped="true">
+                                                                              <closure function="ptyxis_tabbed_window_get_container_title" type="gchararray" swapped="true">
                                                                               </closure>
                                                                             </property>
                                                                             <binding name="search">
@@ -557,7 +557,7 @@
                                                         </property>
                                                         <property name="header-factory">
                                                           <object class="GtkSignalListItemFactory">
-                                                            <signal name="bind" handler="ptyxis_window_bind_section_title" swapped="true"/>
+                                                            <signal name="bind" handler="ptyxis_tabbed_window_bind_section_title" swapped="true"/>
                                                           </object>
                                                         </property>
                                                         <property name="factory">
@@ -636,12 +636,12 @@
                           <object class="AdwWindowTitle">
                             <binding name="subtitle">
                               <lookup name="subtitle" type="PtyxisTab">
-                                <lookup name="active-tab">PtyxisWindow</lookup>
+                                <lookup name="active-tab">PtyxisTabbedWindow</lookup>
                               </lookup>
                             </binding>
                             <binding name="title">
                               <lookup name="title" type="PtyxisTab">
-                                  <lookup name="active-tab">PtyxisWindow</lookup>
+                                  <lookup name="active-tab">PtyxisTabbedWindow</lookup>
                                 </lookup>
                             </binding>
                           </object>
@@ -684,12 +684,12 @@
                     <property name="vexpand">true</property>
                     <child>
                       <object class="AdwTabView" id="tab_view">
-                        <signal name="notify::selected-page" handler="ptyxis_window_notify_selected_page_cb" swapped="1" after="1"/>
-                        <signal name="page-attached" handler="ptyxis_window_page_attached_cb" swapped="1"/>
-                        <signal name="page-detached" handler="ptyxis_window_page_detached_cb" swapped="1"/>
-                        <signal name="create-window" handler="ptyxis_window_create_window_cb" swapped="1"/>
-                        <signal name="close-page" handler="ptyxis_window_close_page_cb" swapped="1"/>
-                        <signal name="setup-menu" handler="ptyxis_window_setup_menu_cb" swapped="1"/>
+                        <signal name="notify::selected-page" handler="ptyxis_tabbed_window_notify_selected_page_cb" swapped="1" after="1"/>
+                        <signal name="page-attached" handler="ptyxis_tabbed_window_page_attached_cb" swapped="1"/>
+                        <signal name="page-detached" handler="ptyxis_tabbed_window_page_detached_cb" swapped="1"/>
+                        <signal name="create-window" handler="ptyxis_tabbed_window_create_window_cb" swapped="1"/>
+                        <signal name="close-page" handler="ptyxis_tabbed_window_close_page_cb" swapped="1"/>
+                        <signal name="setup-menu" handler="ptyxis_tabbed_window_setup_menu_cb" swapped="1"/>
                         <property name="menu-model">tab_menu</property>
                       </object>
                     </child>
@@ -719,7 +719,7 @@
     </property>
     <binding name="model">
       <lookup name="containers" type="PtyxisApplication">
-        <lookup name="application">PtyxisWindow</lookup>
+        <lookup name="application">PtyxisTabbedWindow</lookup>
       </lookup>
     </binding>
   </object>
@@ -738,7 +738,7 @@
         </property>
         <binding name="model">
           <lookup name="containers" type="PtyxisApplication">
-            <lookup name="application">PtyxisWindow</lookup>
+            <lookup name="application">PtyxisTabbedWindow</lookup>
           </lookup>
         </binding>
       </object>
@@ -748,11 +748,6 @@
     <section>
       <item>
         <attribute name="custom">interface-style</attribute>
-      </item>
-    </section>
-    <section>
-      <item>
-        <attribute name="custom">zoom</attribute>
       </item>
     </section>
     <section>
