@@ -33,69 +33,28 @@
 #include "ptyxis-settings.h"
 #include "ptyxis-shrinker.h"
 #include "ptyxis-tab-private.h"
+#include "ptyxis-terminal-surface.h"
 #include "ptyxis-theme-selector.h"
 #include "ptyxis-title-dialog.h"
 #include "ptyxis-profile-dialog.h"
 #include "ptyxis-util.h"
 #include "ptyxis-window.h"
+#include "ptyxis-window-private.h"
 #include "ptyxis-window-dressing.h"
 
 #ifdef GDK_WINDOWING_X11
 # include <gdk/x11/gdkx.h>
 #endif
 
-struct _PtyxisWindow
+G_DEFINE_TYPE_WITH_PRIVATE (PtyxisWindow, ptyxis_window, ADW_TYPE_APPLICATION_WINDOW)
+
+#define GET_PRIV(self) ((PtyxisWindowPrivate *)ptyxis_window_get_instance_private (self))
+
+PtyxisWindowPrivate *
+_ptyxis_window_get_priv (PtyxisWindow *self)
 {
-  AdwApplicationWindow   parent_instance;
-
-  PtyxisShortcuts       *shortcuts;
-  PtyxisParkingLot      *parking_lot;
-
-  GtkButton             *new_terminal_button;
-  GtkMenuButton         *new_terminal_menu_button;
-  GtkSeparator          *new_terminal_separator;
-  PtyxisFindBar         *find_bar;
-  GtkRevealer           *find_bar_revealer;
-  AdwHeaderBar          *header_bar;
-  GMenu                 *primary_menu;
-  GtkMenuButton         *primary_menu_button;
-  AdwTabBar             *tab_bar;
-  GMenu                 *tab_menu;
-  AdwTabOverview        *tab_overview;
-  AdwTabView            *tab_view;
-  GtkWidget             *zoom_label;
-  GtkWidget             *tab_overview_button;
-  GtkWidget             *new_tab_box;
-  PtyxisFullscreenBox   *fullscreen_box;
-  GtkStack              *menu_search_stack;
-  GtkSearchEntry        *menu_search;
-  GtkListView           *menu_list_view;
-  GtkFilterListModel    *maybe_containers;
-  GtkCustomFilter       *maybe_containers_filter;
-  GtkFilterListModel    *not_containers;
-  GtkCustomFilter       *not_containers_filter;
-
-  GBindingGroup         *profile_bindings;
-  GBindingGroup         *active_tab_bindings;
-  GSignalGroup          *active_tab_signals;
-  GSignalGroup          *selected_page_signals;
-  PtyxisWindowDressing  *dressing;
-  GtkBox                *visual_bell;
-  GPropertyAction       *interface_style_action;
-
-  guint                  visual_bell_source;
-  guint                  focus_active_tab_source;
-
-  guint                  tab_overview_animating : 1;
-  guint                  disposed : 1;
-  guint                  single_terminal_mode : 1;
-  guint                  is_maximized : 1;
-  guint                  is_fullscreen : 1;
-  guint                  in_close_request : 1;
-  guint                  reset_nonvisible_from_size_allocate : 1;
-};
-
-G_DEFINE_FINAL_TYPE (PtyxisWindow, ptyxis_window, ADW_TYPE_APPLICATION_WINDOW)
+  return GET_PRIV (self);
+}
 
 enum {
   PROP_0,
@@ -106,7 +65,7 @@ enum {
 
 static GParamSpec *properties[N_PROPS];
 
-static void
+void
 ptyxis_window_save_size (PtyxisWindow *self)
 {
   PtyxisTab *active_tab;
@@ -138,15 +97,15 @@ ptyxis_window_close_page_dialog_cb (GObject      *object,
   g_assert (PTYXIS_IS_TAB (tab));
 
   self = PTYXIS_WINDOW (gtk_widget_get_ancestor (GTK_WIDGET (tab), PTYXIS_TYPE_WINDOW));
-  page = adw_tab_view_get_page (self->tab_view, GTK_WIDGET (tab));
+  page = adw_tab_view_get_page (GET_PRIV (self)->tab_view, GTK_WIDGET (tab));
 
   if (!_ptyxis_close_dialog_run_finish (result, &error))
     {
-      adw_tab_view_close_page_finish (self->tab_view, page, FALSE);
+      adw_tab_view_close_page_finish (GET_PRIV (self)->tab_view, page, FALSE);
       return;
     }
 
-  ptyxis_parking_lot_push (self->parking_lot, tab);
+  ptyxis_parking_lot_push (GET_PRIV (self)->parking_lot, tab);
 
   /* Ignore snapshot because libadwaita will try to snapshot this when
    * calling adw_tab_view_close_page_finish(). This just skips past it
@@ -154,10 +113,10 @@ ptyxis_window_close_page_dialog_cb (GObject      *object,
    */
   _ptyxis_tab_ignore_snapshot (tab);
 
-  adw_tab_view_close_page_finish (self->tab_view, page, TRUE);
+  adw_tab_view_close_page_finish (GET_PRIV (self)->tab_view, page, TRUE);
 
   /* Resize if we are going from 2->1 tabs */
-  if (adw_tab_view_get_n_pages (self->tab_view) == 1)
+  if (adw_tab_view_get_n_pages (GET_PRIV (self)->tab_view) == 1)
     gtk_window_set_default_size (GTK_WINDOW (self), -1, -1);
 }
 
@@ -180,13 +139,13 @@ ptyxis_window_close_page_cb (PtyxisWindow *self,
   settings = ptyxis_application_get_settings (PTYXIS_APPLICATION_DEFAULT);
 
   /* If we are disposed, allow closing immediately */
-  if (self->disposed)
+  if (GET_PRIV (self)->disposed)
     return GDK_EVENT_PROPAGATE;
 
   if (!ptyxis_tab_is_running (tab, NULL) ||
       !ptyxis_settings_get_prompt_on_close (settings))
     {
-      ptyxis_parking_lot_push (self->parking_lot, tab);
+      ptyxis_parking_lot_push (GET_PRIV (self)->parking_lot, tab);
       gtk_window_set_default_size (GTK_WINDOW (self), -1, -1);
       return GDK_EVENT_PROPAGATE;
     }
@@ -221,7 +180,7 @@ ptyxis_window_get_tab_at_tab_bar_point (PtyxisWindow     *self,
       g_assert (tab_type != G_TYPE_INVALID);
     }
 
-  if (!(pick = gtk_widget_pick (GTK_WIDGET (self->tab_bar), point->x, point->y, GTK_PICK_DEFAULT)))
+  if (!(pick = gtk_widget_pick (GTK_WIDGET (GET_PRIV (self)->tab_bar), point->x, point->y, GTK_PICK_DEFAULT)))
     return NULL;
 
   if (!G_TYPE_CHECK_INSTANCE_TYPE (pick, tab_type))
@@ -285,8 +244,8 @@ ptyxis_window_focus_active_tab_cb (gpointer data)
 
   g_assert (PTYXIS_IS_WINDOW (self));
 
-  self->focus_active_tab_source = 0;
-  self->tab_overview_animating = FALSE;
+  GET_PRIV (self)->focus_active_tab_source = 0;
+  GET_PRIV (self)->tab_overview_animating = FALSE;
 
   if ((active_tab = ptyxis_window_get_active_tab (self)))
     {
@@ -313,7 +272,7 @@ ptyxis_window_tab_overview_notify_open_cb (PtyxisWindow   *self,
    * See https://gitlab.gnome.org/GNOME/libadwaita/-/issues/670
    */
 
-  g_clear_handle_id (&self->focus_active_tab_source, g_source_remove);
+  g_clear_handle_id (&GET_PRIV (self)->focus_active_tab_source, g_source_remove);
 
   if (!adw_tab_overview_get_open (tab_overview))
     {
@@ -329,16 +288,16 @@ ptyxis_window_tab_overview_notify_open_cb (PtyxisWindow   *self,
       if (!gtk_enable_animations)
         delay_msec = 10;
 
-      self->focus_active_tab_source = g_timeout_add_full (G_PRIORITY_LOW,
-                                                          delay_msec,
-                                                          ptyxis_window_focus_active_tab_cb,
-                                                          self, NULL);
+      GET_PRIV (self)->focus_active_tab_source = g_timeout_add_full (G_PRIORITY_LOW,
+                                                                      delay_msec,
+                                                                      ptyxis_window_focus_active_tab_cb,
+                                                                      self, NULL);
 
       if ((active_tab = ptyxis_window_get_active_tab (self)))
         ptyxis_tab_grab_focus (active_tab);
     }
 
-  self->tab_overview_animating = TRUE;
+  GET_PRIV (self)->tab_overview_animating = TRUE;
 }
 
 static void
@@ -368,7 +327,7 @@ ptyxis_window_create_window_cb (PtyxisWindow *self,
 
   gtk_window_present (GTK_WINDOW (other));
 
-  return other->tab_view;
+  return GET_PRIV (other)->tab_view;
 }
 
 static void
@@ -380,25 +339,25 @@ update_visible_and_maybe_close (PtyxisWindow *self)
 
   g_assert (PTYXIS_IS_WINDOW (self));
 
-  if (self->disposed || self->tab_view == NULL)
+  if (GET_PRIV (self)->disposed || GET_PRIV (self)->tab_view == NULL)
     return;
 
-  n_pages = adw_tab_view_get_n_pages (self->tab_view);
+  n_pages = adw_tab_view_get_n_pages (GET_PRIV (self)->tab_view);
 
-  if (n_pages == 0 && !adw_tab_view_get_is_transferring_page (self->tab_view))
+  if (n_pages == 0 && !adw_tab_view_get_is_transferring_page (GET_PRIV (self)->tab_view))
     {
-      if (!self->in_close_request)
+      if (!GET_PRIV (self)->in_close_request)
         ptyxis_application_save_session (PTYXIS_APPLICATION_DEFAULT);
       gtk_window_destroy (GTK_WINDOW (self));
       return;
     }
 
-  was_visible = gtk_widget_get_visible (GTK_WIDGET (self->tab_bar));
-  visible = !self->single_terminal_mode && n_pages > 1;
+  was_visible = gtk_widget_get_visible (GTK_WIDGET (GET_PRIV (self)->tab_bar));
+  visible = !GET_PRIV (self)->single_terminal_mode && n_pages > 1;
 
   if (visible != was_visible)
     {
-      gtk_widget_set_visible (GTK_WIDGET (self->tab_bar), visible);
+      gtk_widget_set_visible (GTK_WIDGET (GET_PRIV (self)->tab_bar), visible);
       gtk_window_set_default_size (GTK_WINDOW (self), -1, -1);
 
       if (visible)
@@ -434,11 +393,11 @@ ptyxis_window_page_detached_cb (PtyxisWindow *self,
   update_visible_and_maybe_close (self);
 }
 
-static gboolean
-bind_title_cb (GBinding     *binding,
-               const GValue *from_value,
-               GValue       *to_value,
-               gpointer      user_data)
+gboolean
+_ptyxis_window_bind_title_cb (GBinding     *binding,
+                              const GValue *from_value,
+                              GValue       *to_value,
+                              gpointer      user_data)
 {
   const char *str = g_value_get_string (from_value);
 
@@ -464,10 +423,10 @@ ptyxis_window_notify_selected_page_cb (PtyxisWindow *self,
   g_assert (PTYXIS_IS_WINDOW (self));
   g_assert (ADW_IS_TAB_VIEW (tab_view));
 
-  if (self->tab_view != NULL)
-    page = adw_tab_view_get_selected_page (self->tab_view);
+  if (GET_PRIV (self)->tab_view != NULL)
+    page = adw_tab_view_get_selected_page (GET_PRIV (self)->tab_view);
 
-  g_signal_group_set_target (self->selected_page_signals, page);
+  g_signal_group_set_target (GET_PRIV (self)->selected_page_signals, page);
 
   if (page != NULL)
     {
@@ -477,7 +436,7 @@ ptyxis_window_notify_selected_page_cb (PtyxisWindow *self,
 
       terminal = ptyxis_tab_get_terminal (tab);
 
-      g_signal_group_set_target (self->active_tab_signals, tab);
+      g_signal_group_set_target (GET_PRIV (self)->active_tab_signals, tab);
 
       read_only = g_property_action_new ("tab.read-only", tab, "read-only");
 
@@ -488,11 +447,11 @@ ptyxis_window_notify_selected_page_cb (PtyxisWindow *self,
 
   if (terminal == NULL)
     {
-      gtk_revealer_set_reveal_child (self->find_bar_revealer, FALSE);
+      gtk_revealer_set_reveal_child (GET_PRIV (self)->find_bar_revealer, FALSE);
       gtk_window_set_title (GTK_WINDOW (self), ptyxis_app_name ());
     }
 
-  ptyxis_find_bar_set_terminal (self->find_bar, terminal);
+  ptyxis_find_bar_set_terminal (GET_PRIV (self)->find_bar, terminal);
 
   if (!has_page)
     {
@@ -519,11 +478,11 @@ ptyxis_window_notify_selected_page_cb (PtyxisWindow *self,
   if (read_only != NULL)
     g_action_map_add_action (G_ACTION_MAP (self), G_ACTION (read_only));
 
-  g_binding_group_set_source (self->active_tab_bindings, tab);
+  g_binding_group_set_source (GET_PRIV (self)->active_tab_bindings, tab);
 
   g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_ACTIVE_TAB]);
 
-  ptyxis_fullscreen_box_reveal (self->fullscreen_box);
+  ptyxis_fullscreen_box_reveal (GET_PRIV (self)->fullscreen_box);
 }
 
 static void
@@ -602,7 +561,7 @@ ptyxis_window_tab_overview_create_tab_cb (PtyxisWindow   *self,
 
   gtk_widget_activate_action (GTK_WIDGET (tab_overview), "win.new-tab", "(ss)", "", "");
 
-  return adw_tab_view_get_selected_page (self->tab_view);
+  return adw_tab_view_get_selected_page (GET_PRIV (self)->tab_view);
 }
 
 static void
@@ -724,8 +683,8 @@ ptyxis_window_tab_overview_action (GtkWidget  *widget,
 
   g_assert (PTYXIS_IS_WINDOW (self));
 
-  adw_tab_overview_set_open (self->tab_overview,
-                             !adw_tab_overview_get_open (self->tab_overview));
+  adw_tab_overview_set_open (GET_PRIV (self)->tab_overview,
+                             !adw_tab_overview_get_open (GET_PRIV (self)->tab_overview));
 }
 
 static void
@@ -818,8 +777,8 @@ ptyxis_window_active_tab_commit_cb (PtyxisWindow *self,
   g_assert (PTYXIS_IS_WINDOW (self));
   g_assert (PTYXIS_IS_TAB (tab));
 
-  if (self->is_fullscreen)
-    ptyxis_fullscreen_box_unreveal (self->fullscreen_box);
+  if (GET_PRIV (self)->is_fullscreen)
+    ptyxis_fullscreen_box_unreveal (GET_PRIV (self)->fullscreen_box);
 }
 
 static void
@@ -836,8 +795,8 @@ ptyxis_window_close_action (GtkWidget  *widget,
   if (!(tab = ptyxis_window_get_active_tab (self)))
     return;
 
-  tab_page = adw_tab_view_get_page (self->tab_view, GTK_WIDGET (tab));
-  adw_tab_view_close_page (self->tab_view, tab_page);
+  tab_page = adw_tab_view_get_page (GET_PRIV (self)->tab_view, GTK_WIDGET (tab));
+  adw_tab_view_close_page (GET_PRIV (self)->tab_view, tab_page);
 }
 
 static void
@@ -854,8 +813,8 @@ ptyxis_window_close_others_action (GtkWidget  *widget,
   if (!(tab = ptyxis_window_get_active_tab (self)))
     return;
 
-  tab_page = adw_tab_view_get_page (self->tab_view, GTK_WIDGET (tab));
-  adw_tab_view_close_other_pages (self->tab_view, tab_page);
+  tab_page = adw_tab_view_get_page (GET_PRIV (self)->tab_view, GTK_WIDGET (tab));
+  adw_tab_view_close_other_pages (GET_PRIV (self)->tab_view, tab_page);
 }
 
 static void
@@ -873,12 +832,12 @@ ptyxis_window_detach_action (GtkWidget  *widget,
   if (!(tab = ptyxis_window_get_active_tab (self)))
     return;
 
-  tab_page = adw_tab_view_get_page (self->tab_view, GTK_WIDGET (tab));
+  tab_page = adw_tab_view_get_page (GET_PRIV (self)->tab_view, GTK_WIDGET (tab));
 
   new_window = g_object_new (PTYXIS_TYPE_WINDOW,
                              "application", PTYXIS_APPLICATION_DEFAULT,
                              NULL);
-  adw_tab_view_transfer_page (self->tab_view, tab_page, new_window->tab_view, 0);
+  adw_tab_view_transfer_page (GET_PRIV (self)->tab_view, tab_page, GET_PRIV (new_window)->tab_view, 0);
 
   gtk_window_present (GTK_WINDOW (new_window));
 }
@@ -895,10 +854,10 @@ ptyxis_window_tab_pin_action (GtkWidget  *widget,
   g_assert (PTYXIS_IS_WINDOW (self));
 
   if (!(tab = ptyxis_window_get_active_tab (self)) ||
-      !(tab_page = adw_tab_view_get_page (self->tab_view, GTK_WIDGET (tab))))
+      !(tab_page = adw_tab_view_get_page (GET_PRIV (self)->tab_view, GTK_WIDGET (tab))))
     return;
 
-  adw_tab_view_set_page_pinned (self->tab_view, tab_page, TRUE);
+  adw_tab_view_set_page_pinned (GET_PRIV (self)->tab_view, tab_page, TRUE);
 }
 
 static void
@@ -913,10 +872,10 @@ ptyxis_window_tab_unpin_action (GtkWidget  *widget,
   g_assert (PTYXIS_IS_WINDOW (self));
 
   if (!(tab = ptyxis_window_get_active_tab (self)) ||
-      !(tab_page = adw_tab_view_get_page (self->tab_view, GTK_WIDGET (tab))))
+      !(tab_page = adw_tab_view_get_page (GET_PRIV (self)->tab_view, GTK_WIDGET (tab))))
     return;
 
-  adw_tab_view_set_page_pinned (self->tab_view, tab_page, FALSE);
+  adw_tab_view_set_page_pinned (GET_PRIV (self)->tab_view, tab_page, FALSE);
 }
 
 void
@@ -929,8 +888,8 @@ ptyxis_window_set_tab_pinned (PtyxisWindow *self,
   g_return_if_fail (PTYXIS_IS_WINDOW (self));
   g_return_if_fail (PTYXIS_IS_TAB (tab));
 
-  if ((tab_page = adw_tab_view_get_page (self->tab_view, GTK_WIDGET (tab))))
-    adw_tab_view_set_page_pinned (self->tab_view, tab_page, pinned);
+  if ((tab_page = adw_tab_view_get_page (GET_PRIV (self)->tab_view, GTK_WIDGET (tab))))
+    adw_tab_view_set_page_pinned (GET_PRIV (self)->tab_view, tab_page, pinned);
 }
 
 static void
@@ -939,14 +898,14 @@ ptyxis_window_page_previous_action (GtkWidget  *widget,
                                     GVariant   *param)
 {
   PtyxisWindow *self = PTYXIS_WINDOW (widget);
-  guint n_pages = adw_tab_view_get_n_pages (self->tab_view);
+  guint n_pages = adw_tab_view_get_n_pages (GET_PRIV (self)->tab_view);
 
   if (n_pages == 0)
     return;
 
-  if (!adw_tab_view_select_previous_page (self->tab_view))
-    adw_tab_view_set_selected_page (self->tab_view,
-                                    adw_tab_view_get_nth_page (self->tab_view, n_pages-1));
+  if (!adw_tab_view_select_previous_page (GET_PRIV (self)->tab_view))
+    adw_tab_view_set_selected_page (GET_PRIV (self)->tab_view,
+                                    adw_tab_view_get_nth_page (GET_PRIV (self)->tab_view, n_pages-1));
 }
 
 static void
@@ -955,14 +914,14 @@ ptyxis_window_page_next_action (GtkWidget  *widget,
                                 GVariant   *param)
 {
   PtyxisWindow *self = PTYXIS_WINDOW (widget);
-  guint n_pages = adw_tab_view_get_n_pages (self->tab_view);
+  guint n_pages = adw_tab_view_get_n_pages (GET_PRIV (self)->tab_view);
 
   if (n_pages == 0)
     return;
 
-  if (!adw_tab_view_select_next_page (self->tab_view))
-    adw_tab_view_set_selected_page (self->tab_view,
-                                    adw_tab_view_get_nth_page (self->tab_view, 0));
+  if (!adw_tab_view_select_next_page (GET_PRIV (self)->tab_view))
+    adw_tab_view_set_selected_page (GET_PRIV (self)->tab_view,
+                                    adw_tab_view_get_nth_page (GET_PRIV (self)->tab_view, 0));
 }
 
 static void
@@ -980,7 +939,7 @@ ptyxis_window_tab_focus_action (GtkWidget  *widget,
   g_assert (g_variant_is_of_type (param, G_VARIANT_TYPE_INT32));
 
   position = g_variant_get_int32 (param);
-  n_pages = adw_tab_view_get_n_pages (self->tab_view);
+  n_pages = adw_tab_view_get_n_pages (GET_PRIV (self)->tab_view);
 
   if (n_pages == 0)
     return;
@@ -994,8 +953,8 @@ ptyxis_window_tab_focus_action (GtkWidget  *widget,
 
   if (nth < n_pages)
     {
-      AdwTabPage *page = adw_tab_view_get_nth_page (self->tab_view, nth);
-      adw_tab_view_set_selected_page (self->tab_view, page);
+      AdwTabPage *page = adw_tab_view_get_nth_page (GET_PRIV (self)->tab_view, nth);
+      adw_tab_view_set_selected_page (GET_PRIV (self)->tab_view, page);
     }
 }
 
@@ -1036,8 +995,8 @@ ptyxis_window_move_left_action (GtkWidget  *widget,
   if (!(tab = ptyxis_window_get_active_tab (self)))
     return;
 
-  tab_page = adw_tab_view_get_page (self->tab_view, GTK_WIDGET (tab));
-  adw_tab_view_reorder_backward (self->tab_view, tab_page);
+  tab_page = adw_tab_view_get_page (GET_PRIV (self)->tab_view, GTK_WIDGET (tab));
+  adw_tab_view_reorder_backward (GET_PRIV (self)->tab_view, tab_page);
   ptyxis_tab_raise (tab);
   ptyxis_tab_grab_focus (tab);
 }
@@ -1056,8 +1015,8 @@ ptyxis_window_move_right_action (GtkWidget  *widget,
   if (!(tab = ptyxis_window_get_active_tab (self)))
     return;
 
-  tab_page = adw_tab_view_get_page (self->tab_view, GTK_WIDGET (tab));
-  adw_tab_view_reorder_forward (self->tab_view, tab_page);
+  tab_page = adw_tab_view_get_page (GET_PRIV (self)->tab_view, GTK_WIDGET (tab));
+  adw_tab_view_reorder_forward (GET_PRIV (self)->tab_view, tab_page);
   ptyxis_tab_raise (tab);
   ptyxis_tab_grab_focus (tab);
 }
@@ -1128,23 +1087,23 @@ ptyxis_window_toplevel_state_changed_cb (PtyxisWindow *self,
   gtk_widget_action_set_enabled (GTK_WIDGET (self), "win.fullscreen", !is_fullscreen);
   gtk_widget_action_set_enabled (GTK_WIDGET (self), "win.unfullscreen", is_fullscreen);
 
-  ptyxis_fullscreen_box_set_fullscreen (self->fullscreen_box, is_fullscreen);
+  ptyxis_fullscreen_box_set_fullscreen (GET_PRIV (self)->fullscreen_box, is_fullscreen);
 
   /* Clear cached grid size for non-visible tabs when leaving fullscreen or
    * maximized state. Otherwise we'll jump back to large grid size which is
    * not expected from a user-standpoint.
    */
-  if ((!is_maximized && self->is_maximized) ||
-      (!is_fullscreen && self->is_fullscreen))
-    self->reset_nonvisible_from_size_allocate = TRUE;
+  if ((!is_maximized && GET_PRIV (self)->is_maximized) ||
+      (!is_fullscreen && GET_PRIV (self)->is_fullscreen))
+    GET_PRIV (self)->reset_nonvisible_from_size_allocate = TRUE;
 
   /* If transitioning to fullscreen, animate in the fullscreen controls which
    * ensures that they will disappear after timeout.
    *
    * See: https://gitlab.gnome.org/chergert/ptyxis/-/issues/376
    */
-  if (!self->is_fullscreen && is_fullscreen)
-    ptyxis_fullscreen_box_reveal (self->fullscreen_box);
+  if (!GET_PRIV (self)->is_fullscreen && is_fullscreen)
+    ptyxis_fullscreen_box_reveal (GET_PRIV (self)->fullscreen_box);
 
   /* Ensure our CSS can apply a different background for fullscreen as the compositor
    * is required (in Wayland) to not allow a window to see things behind it when
@@ -1155,8 +1114,8 @@ ptyxis_window_toplevel_state_changed_cb (PtyxisWindow *self,
   else
     gtk_widget_remove_css_class (GTK_WIDGET (self), "fullscreen");
 
-  self->is_fullscreen = is_fullscreen;
-  self->is_maximized = is_maximized;
+  GET_PRIV (self)->is_fullscreen = is_fullscreen;
+  GET_PRIV (self)->is_maximized = is_maximized;
 }
 
 static void
@@ -1186,8 +1145,8 @@ ptyxis_window_shortcuts_notify_cb (PtyxisWindow    *self,
   g_assert (PTYXIS_IS_WINDOW (self));
   g_assert (PTYXIS_IS_SHORTCUTS (shortcuts));
 
-  ptyxis_shortcuts_update_menu (shortcuts, self->primary_menu);
-  ptyxis_shortcuts_update_menu (shortcuts, self->tab_menu);
+  ptyxis_shortcuts_update_menu (shortcuts, GET_PRIV (self)->primary_menu);
+  ptyxis_shortcuts_update_menu (shortcuts, GET_PRIV (self)->tab_menu);
 }
 
 static void
@@ -1244,8 +1203,8 @@ ptyxis_window_search_action (GtkWidget  *widget,
 
   g_assert (PTYXIS_IS_WINDOW (self));
 
-  gtk_revealer_set_reveal_child (self->find_bar_revealer, TRUE);
-  gtk_widget_grab_focus (GTK_WIDGET (self->find_bar));
+  gtk_revealer_set_reveal_child (GET_PRIV (self)->find_bar_revealer, TRUE);
+  gtk_widget_grab_focus (GTK_WIDGET (GET_PRIV (self)->find_bar));
 }
 
 static void
@@ -1258,7 +1217,7 @@ ptyxis_window_undo_close_tab_action (GtkWidget  *widget,
 
   g_assert (PTYXIS_IS_WINDOW (self));
 
-  if ((tab = ptyxis_parking_lot_pop (self->parking_lot)))
+  if ((tab = ptyxis_parking_lot_pop (GET_PRIV (self)->parking_lot)))
     {
       if (!ptyxis_tab_is_running (tab, NULL))
         ptyxis_tab_show_banner (tab);
@@ -1323,7 +1282,7 @@ ptyxis_window_primary_menu_action (GtkWidget  *widget,
 
   g_assert (PTYXIS_IS_WINDOW (self));
 
-  gtk_menu_button_popup (self->primary_menu_button);
+  gtk_menu_button_popup (GET_PRIV (self)->primary_menu_button);
 }
 
 static void
@@ -1335,7 +1294,7 @@ ptyxis_window_tab_menu_action (GtkWidget  *widget,
 
   g_assert (PTYXIS_IS_WINDOW (self));
 
-  gtk_menu_button_popup (self->new_terminal_menu_button);
+  gtk_menu_button_popup (GET_PRIV (self)->new_terminal_menu_button);
 }
 
 static void
@@ -1352,7 +1311,7 @@ ptyxis_window_close_request_cb (GObject      *object,
   if (_ptyxis_close_dialog_run_finish (result, &error))
     gtk_window_destroy (GTK_WINDOW (self));
 
-  self->in_close_request = FALSE;
+  GET_PRIV (self)->in_close_request = FALSE;
 }
 
 static gboolean
@@ -1383,7 +1342,7 @@ ptyxis_window_close_request (GtkWindow *window)
 
   ptyxis_window_save_size (self);
 
-  if (!self->single_terminal_mode && is_last_window (self))
+  if (!GET_PRIV (self)->single_terminal_mode && is_last_window (self))
     ptyxis_application_save_session (PTYXIS_APPLICATION_DEFAULT);
 
   /* Short-circuit if user dismissed guard rails */
@@ -1392,19 +1351,19 @@ ptyxis_window_close_request (GtkWindow *window)
     return GDK_EVENT_PROPAGATE;
 
   tabs = g_ptr_array_new_with_free_func (g_object_unref);
-  n_pages = adw_tab_view_get_n_pages (self->tab_view);
+  n_pages = adw_tab_view_get_n_pages (GET_PRIV (self)->tab_view);
 
-  self->in_close_request = TRUE;
+  GET_PRIV (self)->in_close_request = TRUE;
 
   for (guint i = n_pages; i > 0; i--)
     {
-      AdwTabPage *page = adw_tab_view_get_nth_page (self->tab_view, i - 1);
+      AdwTabPage *page = adw_tab_view_get_nth_page (GET_PRIV (self)->tab_view, i - 1);
       PtyxisTab *tab = PTYXIS_TAB (adw_tab_page_get_child (page));
 
       if (ptyxis_tab_is_running (tab, NULL))
         g_ptr_array_add (tabs, g_object_ref (tab));
       else
-        adw_tab_view_close_page (self->tab_view, page);
+        adw_tab_view_close_page (GET_PRIV (self)->tab_view, page);
     }
 
   if (tabs->len > 0)
@@ -1414,7 +1373,7 @@ ptyxis_window_close_request (GtkWindow *window)
                                     ptyxis_window_close_request_cb,
                                     g_object_ref (self));
   else
-    self->in_close_request = FALSE;
+    GET_PRIV (self)->in_close_request = FALSE;
 
   return tabs->len > 0;
 }
@@ -1492,7 +1451,7 @@ ptyxis_window_add_zoom_controls (PtyxisWindow *self)
 
   g_assert (PTYXIS_IS_WINDOW (self));
 
-  popover = gtk_menu_button_get_popover (self->primary_menu_button);
+  popover = gtk_menu_button_get_popover (GET_PRIV (self)->primary_menu_button);
 
   /* Add zoom controls */
   zoom_box = g_object_new (GTK_TYPE_BOX,
@@ -1530,7 +1489,7 @@ ptyxis_window_add_zoom_controls (PtyxisWindow *self)
   gtk_accessible_update_property (GTK_ACCESSIBLE (zoom_out),
                                   GTK_ACCESSIBLE_PROPERTY_LABEL,
                                   _("Zoom out"), -1);
-  self->zoom_label = g_object_new (GTK_TYPE_BUTTON,
+  GET_PRIV (self)->zoom_label = g_object_new (GTK_TYPE_BUTTON,
                                    "css-classes", (const char * const[]) {"flat", "pill", NULL},
                                    "action-name", "win.zoom-one",
                                    "action-target", g_variant_new_boolean (FALSE),
@@ -1538,9 +1497,9 @@ ptyxis_window_add_zoom_controls (PtyxisWindow *self)
                                    "tooltip-text", _("Reset Zoom"),
                                    "label", "100%",
                                    NULL);
-  g_binding_group_bind (self->active_tab_bindings, "zoom-label", self->zoom_label, "label", 0);
+  g_binding_group_bind (GET_PRIV (self)->active_tab_bindings, "zoom-label", GET_PRIV (self)->zoom_label, "label", 0);
   gtk_box_append (GTK_BOX (zoom_box), zoom_out);
-  gtk_box_append (GTK_BOX (zoom_box), self->zoom_label);
+  gtk_box_append (GTK_BOX (zoom_box), GET_PRIV (self)->zoom_label);
   gtk_box_append (GTK_BOX (zoom_box), zoom_in);
   gtk_popover_menu_add_child (GTK_POPOVER_MENU (popover), zoom_box, "zoom");
 }
@@ -1556,10 +1515,10 @@ ptyxis_window_add_theme_controls (PtyxisWindow *self)
   g_assert (PTYXIS_IS_WINDOW (self));
 
   settings = ptyxis_application_get_settings (PTYXIS_APPLICATION_DEFAULT);
-  self->interface_style_action = g_property_action_new ("interface-style", settings, "interface-style");
-  g_action_map_add_action (G_ACTION_MAP (self), G_ACTION (self->interface_style_action));
+  GET_PRIV (self)->interface_style_action = g_property_action_new ("interface-style", settings, "interface-style");
+  g_action_map_add_action (G_ACTION_MAP (self), G_ACTION (GET_PRIV (self)->interface_style_action));
 
-  popover = gtk_menu_button_get_popover (self->primary_menu_button);
+  popover = gtk_menu_button_get_popover (GET_PRIV (self)->primary_menu_button);
   selector = g_object_new (PTYXIS_TYPE_THEME_SELECTOR,
                            "action-name", "win.interface-style",
                            NULL);
@@ -1591,8 +1550,8 @@ ptyxis_window_update_menu_visibility (PtyxisWindow *self)
                                  "win.set-profile",
                                  n_profiles > 1);
 
-  gtk_widget_set_visible (GTK_WIDGET (self->new_terminal_separator), visible);
-  gtk_widget_set_visible (GTK_WIDGET (self->new_terminal_menu_button), visible);
+  gtk_widget_set_visible (GTK_WIDGET (GET_PRIV (self)->new_terminal_separator), visible);
+  gtk_widget_set_visible (GTK_WIDGET (GET_PRIV (self)->new_terminal_menu_button), visible);
 }
 
 static void
@@ -1615,8 +1574,8 @@ notify_decoration_layout_cb (PtyxisWindow *self,
   if ((colon = strchr (layout, ':')) && (close_ = strstr (layout, "close")))
     inverted = close_ < colon;
 
-  if (self->tab_bar)
-    adw_tab_bar_set_inverted (self->tab_bar, inverted);
+  if (GET_PRIV (self)->tab_bar)
+    adw_tab_bar_set_inverted (GET_PRIV (self)->tab_bar, inverted);
 }
 
 static void
@@ -1630,12 +1589,12 @@ ptyxis_window_constructed (GObject *object)
 
   G_OBJECT_CLASS (ptyxis_window_parent_class)->constructed (object);
 
-  self->dressing = ptyxis_window_dressing_new (self);
-  g_binding_group_bind (self->profile_bindings, "palette",
-                        self->dressing, "palette",
+  GET_PRIV (self)->dressing = ptyxis_window_dressing_new (self);
+  g_binding_group_bind (GET_PRIV (self)->profile_bindings, "palette",
+                        GET_PRIV (self)->dressing, "palette",
                         G_BINDING_SYNC_CREATE);
-  g_binding_group_bind (self->profile_bindings, "opacity",
-                        self->dressing, "opacity",
+  g_binding_group_bind (GET_PRIV (self)->profile_bindings, "opacity",
+                        GET_PRIV (self)->dressing, "opacity",
                         G_BINDING_SYNC_CREATE);
 
   gtk_widget_action_set_enabled (GTK_WIDGET (self), "win.unfullscreen", FALSE);
@@ -1770,7 +1729,7 @@ ptyxis_window_menu_stop_search (PtyxisWindow   *self,
   g_assert (GTK_IS_SEARCH_ENTRY (entry));
 
   gtk_editable_set_text (GTK_EDITABLE (entry), "");
-  gtk_menu_button_popdown (self->new_terminal_menu_button);
+  gtk_menu_button_popdown (GET_PRIV (self)->new_terminal_menu_button);
 
   if ((tab = ptyxis_window_get_active_tab (self)))
     ptyxis_tab_grab_focus (tab);
@@ -1791,8 +1750,8 @@ ptyxis_window_menu_activate_cb (PtyxisWindow *self,
   model = gtk_list_view_get_model (list_view);
   item = g_list_model_get_item (G_LIST_MODEL (model), position);
 
-  gtk_menu_button_popdown (self->new_terminal_menu_button);
-  gtk_editable_set_text (GTK_EDITABLE (self->menu_search), "");
+  gtk_menu_button_popdown (GET_PRIV (self)->new_terminal_menu_button);
+  gtk_editable_set_text (GTK_EDITABLE (GET_PRIV (self)->menu_search), "");
 
   /* First return focus before we make changes so that if we
    * come back to this window we get proper focus which is not
@@ -1828,10 +1787,10 @@ ptyxis_window_menu_search_activate_cb (PtyxisWindow *self,
   g_assert (PTYXIS_IS_WINDOW (self));
   g_assert (GTK_IS_SEARCH_ENTRY (entry));
 
-  model = gtk_list_view_get_model (self->menu_list_view);
+  model = gtk_list_view_get_model (GET_PRIV (self)->menu_list_view);
 
   if (g_list_model_get_n_items (G_LIST_MODEL (model)) > 0)
-    ptyxis_window_menu_activate_cb (self, 0, self->menu_list_view);
+    ptyxis_window_menu_activate_cb (self, 0, GET_PRIV (self)->menu_list_view);
 }
 
 
@@ -1844,9 +1803,9 @@ ptyxis_window_notify_menu_n_items_cb (PtyxisWindow *self,
   g_assert (G_IS_LIST_MODEL (model));
 
   if (g_list_model_get_n_items (model) == 0)
-    gtk_stack_set_visible_child_name (self->menu_search_stack, "empty");
+    gtk_stack_set_visible_child_name (GET_PRIV (self)->menu_search_stack, "empty");
   else
-    gtk_stack_set_visible_child_name (self->menu_search_stack, "results");
+    gtk_stack_set_visible_child_name (GET_PRIV (self)->menu_search_stack, "results");
 }
 
 static gboolean
@@ -1916,7 +1875,7 @@ ptyxis_window_size_allocate (GtkWidget *widget,
 
   GTK_WIDGET_CLASS (ptyxis_window_parent_class)->size_allocate (widget, width, height, baseline);
 
-  if (self->reset_nonvisible_from_size_allocate)
+  if (GET_PRIV (self)->reset_nonvisible_from_size_allocate)
     {
       g_autoptr(GListModel) pages = ptyxis_window_list_pages (self);
       guint n_pages = g_list_model_get_n_items (pages);
@@ -1927,13 +1886,13 @@ ptyxis_window_size_allocate (GtkWidget *widget,
           PtyxisTab *tab = PTYXIS_TAB (adw_tab_page_get_child (page));
           PtyxisTerminal *terminal = ptyxis_tab_get_terminal (tab);
 
-          if (page == adw_tab_view_get_selected_page (self->tab_view))
+          if (page == adw_tab_view_get_selected_page (GET_PRIV (self)->tab_view))
             continue;
 
           ptyxis_terminal_reset_for_size (terminal);
         }
 
-      self->reset_nonvisible_from_size_allocate = FALSE;
+      GET_PRIV (self)->reset_nonvisible_from_size_allocate = FALSE;
     }
 }
 
@@ -1942,19 +1901,19 @@ ptyxis_window_dispose (GObject *object)
 {
   PtyxisWindow *self = (PtyxisWindow *)object;
 
-  self->disposed = TRUE;
+  GET_PRIV (self)->disposed = TRUE;
 
   g_action_map_remove_action (G_ACTION_MAP (self), "interface-style");
 
   gtk_widget_dispose_template (GTK_WIDGET (self), PTYXIS_TYPE_WINDOW);
 
-  g_signal_group_set_target (self->active_tab_signals, NULL);
-  g_binding_group_set_source (self->active_tab_bindings, NULL);
-  g_binding_group_set_source (self->profile_bindings, NULL);
-  g_signal_group_set_target (self->selected_page_signals, NULL);
-  g_clear_handle_id (&self->focus_active_tab_source, g_source_remove);
-  g_clear_object (&self->parking_lot);
-  g_clear_object (&self->interface_style_action);
+  g_signal_group_set_target (GET_PRIV (self)->active_tab_signals, NULL);
+  g_binding_group_set_source (GET_PRIV (self)->active_tab_bindings, NULL);
+  g_binding_group_set_source (GET_PRIV (self)->profile_bindings, NULL);
+  g_signal_group_set_target (GET_PRIV (self)->selected_page_signals, NULL);
+  g_clear_handle_id (&GET_PRIV (self)->focus_active_tab_source, g_source_remove);
+  g_clear_object (&GET_PRIV (self)->parking_lot);
+  g_clear_object (&GET_PRIV (self)->interface_style_action);
 
   G_OBJECT_CLASS (ptyxis_window_parent_class)->dispose (object);
 }
@@ -1964,10 +1923,10 @@ ptyxis_window_finalize (GObject *object)
 {
   PtyxisWindow *self = (PtyxisWindow *)object;
 
-  g_clear_object (&self->active_tab_bindings);
-  g_clear_object (&self->active_tab_signals);
-  g_clear_object (&self->profile_bindings);
-  g_clear_object (&self->selected_page_signals);
+  g_clear_object (&GET_PRIV (self)->active_tab_bindings);
+  g_clear_object (&GET_PRIV (self)->active_tab_signals);
+  g_clear_object (&GET_PRIV (self)->profile_bindings);
+  g_clear_object (&GET_PRIV (self)->selected_page_signals);
 
   G_OBJECT_CLASS (ptyxis_window_parent_class)->finalize (object);
 }
@@ -1987,7 +1946,7 @@ ptyxis_window_get_property (GObject    *object,
       break;
 
     case PROP_SHORTCUTS:
-      g_value_set_object (value, self->shortcuts);
+      g_value_set_object (value, GET_PRIV (self)->shortcuts);
       break;
 
     default:
@@ -2014,6 +1973,126 @@ ptyxis_window_set_property (GObject      *object,
     }
 }
 
+static PtyxisTerminalSurface *
+ptyxis_window_real_get_active_surface (PtyxisWindow *self)
+{
+  PtyxisTab *tab = ptyxis_window_get_active_tab (self);
+
+  if (tab != NULL)
+    return ptyxis_tab_get_surface (tab);
+
+  return NULL;
+}
+
+static PtyxisTerminalSurface *
+ptyxis_window_real_add_terminal (PtyxisWindow  *self,
+                                 PtyxisProfile *profile)
+{
+  PtyxisTab *tab;
+
+  tab = ptyxis_tab_new (profile);
+  ptyxis_window_apply_current_settings (self, tab);
+  ptyxis_window_add_tab (self, tab);
+  ptyxis_window_set_active_tab (self, tab);
+  ptyxis_tab_grab_focus (tab);
+
+  return ptyxis_tab_get_surface (tab);
+}
+
+static void
+ptyxis_window_real_collect_surfaces (PtyxisWindow *self,
+                                     GPtrArray    *surfaces)
+{
+  g_autoptr(GListModel) pages = ptyxis_window_list_pages (self);
+  guint n_items = g_list_model_get_n_items (pages);
+
+  for (guint i = 0; i < n_items; i++)
+    {
+      g_autoptr(AdwTabPage) page = g_list_model_get_item (pages, i);
+      PtyxisTab *tab = PTYXIS_TAB (adw_tab_page_get_child (page));
+
+      g_ptr_array_add (surfaces, ptyxis_tab_get_surface (tab));
+    }
+}
+
+static gboolean
+ptyxis_window_real_focus_by_uuid (PtyxisWindow *self,
+                                  const char   *uuid)
+{
+  return ptyxis_window_focus_tab_by_uuid (self, uuid);
+}
+
+static guint
+ptyxis_window_real_get_n_pages (PtyxisWindow *self)
+{
+  if (GET_PRIV (self)->tab_view == NULL)
+    return 0;
+
+  return adw_tab_view_get_n_pages (GET_PRIV (self)->tab_view);
+}
+
+static GVariant *
+ptyxis_window_real_serialize (PtyxisWindow *self)
+{
+  return NULL;
+}
+
+static gboolean
+ptyxis_window_real_deserialize (PtyxisWindow *self,
+                                GVariant     *state)
+{
+  return FALSE;
+}
+
+static void
+ptyxis_window_real_configure_popover (PtyxisWindow *self,
+                                      GtkWidget    *popover)
+{
+}
+
+static void
+ptyxis_window_real_open_new_window (PtyxisWindow  *self,
+                                    PtyxisProfile *profile,
+                                    const char    *container_id)
+{
+  GVariant *param = g_variant_new ("(ss)",
+                                   profile ? ptyxis_profile_get_uuid (profile) : "",
+                                   container_id ? container_id : "");
+  ptyxis_window_new_window_action (GTK_WIDGET (self), NULL, param);
+}
+
+static gboolean
+ptyxis_window_real_resize_for_zoom (PtyxisWindow *self)
+{
+  return FALSE;
+}
+
+static void
+ptyxis_window_real_surface_needs_attention (PtyxisWindow          *self,
+                                            PtyxisTerminalSurface *surface)
+{
+  g_autoptr(GListModel) pages = ptyxis_window_list_pages (self);
+  guint n_items = g_list_model_get_n_items (pages);
+
+  for (guint i = 0; i < n_items; i++)
+    {
+      g_autoptr(AdwTabPage) page = g_list_model_get_item (pages, i);
+      PtyxisTab *tab = PTYXIS_TAB (adw_tab_page_get_child (page));
+
+      if (ptyxis_tab_get_surface (tab) == surface)
+        {
+          ptyxis_tab_set_needs_attention (tab, TRUE);
+          return;
+        }
+    }
+}
+
+static GtkWindow *
+ptyxis_window_real_create_preferences_window (PtyxisWindow *self)
+{
+  return ptyxis_preferences_window_new (GTK_APPLICATION (PTYXIS_APPLICATION_DEFAULT));
+}
+
 static void
 ptyxis_window_class_init (PtyxisWindowClass *klass)
 {
@@ -2032,6 +2111,19 @@ ptyxis_window_class_init (PtyxisWindowClass *klass)
 
   window_class->close_request = ptyxis_window_close_request;
 
+  klass->get_active_surface = ptyxis_window_real_get_active_surface;
+  klass->add_terminal = ptyxis_window_real_add_terminal;
+  klass->collect_surfaces = ptyxis_window_real_collect_surfaces;
+  klass->focus_by_uuid = ptyxis_window_real_focus_by_uuid;
+  klass->get_n_pages = ptyxis_window_real_get_n_pages;
+  klass->serialize = ptyxis_window_real_serialize;
+  klass->deserialize = ptyxis_window_real_deserialize;
+  klass->configure_popover = ptyxis_window_real_configure_popover;
+  klass->open_new_window = ptyxis_window_real_open_new_window;
+  klass->resize_for_zoom = ptyxis_window_real_resize_for_zoom;
+  klass->surface_needs_attention = ptyxis_window_real_surface_needs_attention;
+  klass->create_preferences_window = ptyxis_window_real_create_preferences_window;
+
   properties[PROP_ACTIVE_TAB] =
     g_param_spec_object ("active-tab", NULL, NULL,
                          PTYXIS_TYPE_TAB,
@@ -2049,29 +2141,29 @@ ptyxis_window_class_init (PtyxisWindowClass *klass)
 
   gtk_widget_class_set_template_from_resource (widget_class, "/org/gnome/Ptyxis/ptyxis-window.ui");
 
-  gtk_widget_class_bind_template_child (widget_class, PtyxisWindow, find_bar);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisWindow, find_bar_revealer);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisWindow, fullscreen_box);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisWindow, header_bar);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisWindow, maybe_containers);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisWindow, maybe_containers_filter);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisWindow, menu_list_view);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisWindow, menu_search);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisWindow, menu_search_stack);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisWindow, new_tab_box);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisWindow, new_terminal_button);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisWindow, new_terminal_menu_button);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisWindow, new_terminal_separator);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisWindow, not_containers);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisWindow, not_containers_filter);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisWindow, primary_menu);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisWindow, primary_menu_button);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisWindow, tab_bar);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisWindow, tab_menu);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisWindow, tab_overview);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisWindow, tab_overview_button);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisWindow, tab_view);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisWindow, visual_bell);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisWindow, find_bar);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisWindow, find_bar_revealer);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisWindow, fullscreen_box);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisWindow, header_bar);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisWindow, maybe_containers);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisWindow, maybe_containers_filter);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisWindow, menu_list_view);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisWindow, menu_search);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisWindow, menu_search_stack);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisWindow, new_tab_box);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisWindow, new_terminal_button);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisWindow, new_terminal_menu_button);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisWindow, new_terminal_separator);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisWindow, not_containers);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisWindow, not_containers_filter);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisWindow, primary_menu);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisWindow, primary_menu_button);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisWindow, tab_bar);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisWindow, tab_menu);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisWindow, tab_overview);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisWindow, tab_overview_button);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisWindow, tab_view);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisWindow, visual_bell);
 
   gtk_widget_class_bind_template_callback (widget_class, ptyxis_window_bind_section_title);
   gtk_widget_class_bind_template_callback (widget_class, ptyxis_window_check_singular);
@@ -2134,77 +2226,77 @@ ptyxis_window_init (PtyxisWindow *self)
   g_autoptr(GIcon) default_icon = NULL;
   GtkGestureClick *click;
 
-  self->active_tab_bindings = g_binding_group_new ();
-  self->profile_bindings = g_binding_group_new ();
+  GET_PRIV (self)->active_tab_bindings = g_binding_group_new ();
+  GET_PRIV (self)->profile_bindings = g_binding_group_new ();
 
-  self->selected_page_signals = g_signal_group_new (ADW_TYPE_TAB_PAGE);
-  g_signal_connect_object (self->selected_page_signals,
+  GET_PRIV (self)->selected_page_signals = g_signal_group_new (ADW_TYPE_TAB_PAGE);
+  g_signal_connect_object (GET_PRIV (self)->selected_page_signals,
                            "bind",
                            G_CALLBACK (ptyxis_window_selected_page_bind_cb),
                            self,
                            G_CONNECT_SWAPPED);
-  g_signal_group_connect_object (self->selected_page_signals,
+  g_signal_group_connect_object (GET_PRIV (self)->selected_page_signals,
                                  "notify::pinned",
                                  G_CALLBACK (ptyxis_window_selected_page_notify_pinned_cb),
                                  self,
                                  G_CONNECT_SWAPPED);
 
-  self->active_tab_signals = g_signal_group_new (PTYXIS_TYPE_TAB);
-  g_signal_connect_object (self->active_tab_signals,
+  GET_PRIV (self)->active_tab_signals = g_signal_group_new (PTYXIS_TYPE_TAB);
+  g_signal_connect_object (GET_PRIV (self)->active_tab_signals,
                            "bind",
                            G_CALLBACK (ptyxis_window_active_tab_bind_cb),
                            self,
                            G_CONNECT_SWAPPED);
-  g_signal_group_connect_object (self->active_tab_signals,
+  g_signal_group_connect_object (GET_PRIV (self)->active_tab_signals,
                                  "bell",
                                  G_CALLBACK (ptyxis_window_active_tab_bell_cb),
                                  self,
                                  G_CONNECT_SWAPPED);
-  g_signal_group_connect_object (self->active_tab_signals,
+  g_signal_group_connect_object (GET_PRIV (self)->active_tab_signals,
                                  "commit",
                                  G_CALLBACK (ptyxis_window_active_tab_commit_cb),
                                  self,
                                  G_CONNECT_SWAPPED);
-  g_signal_group_connect_object (self->active_tab_signals,
+  g_signal_group_connect_object (GET_PRIV (self)->active_tab_signals,
                                  "notify::process-leader-kind",
                                  G_CALLBACK (ptyxis_window_notify_process_leader_kind_cb),
                                  self,
                                  G_CONNECT_SWAPPED);
-  g_signal_group_connect_object (self->active_tab_signals,
+  g_signal_group_connect_object (GET_PRIV (self)->active_tab_signals,
                                  "notify::zoom",
                                  G_CALLBACK (ptyxis_window_notify_zoom_cb),
                                  self,
                                  G_CONNECT_SWAPPED);
 
-  self->parking_lot = ptyxis_parking_lot_new ();
+  GET_PRIV (self)->parking_lot = ptyxis_parking_lot_new ();
 
-  self->shortcuts = g_object_ref (ptyxis_application_get_shortcuts (PTYXIS_APPLICATION_DEFAULT));
+  GET_PRIV (self)->shortcuts = g_object_ref (ptyxis_application_get_shortcuts (PTYXIS_APPLICATION_DEFAULT));
 
   gtk_widget_init_template (GTK_WIDGET (self));
 
   default_icon = g_themed_icon_new ("utilities-terminal-symbolic");
-  adw_tab_view_set_default_icon (self->tab_view, default_icon);
+  adw_tab_view_set_default_icon (GET_PRIV (self)->tab_view, default_icon);
 
 #if DEVELOPMENT_BUILD
   gtk_widget_add_css_class (GTK_WIDGET (self), "devel");
 #endif
 
-  g_signal_connect_object (self->shortcuts,
+  g_signal_connect_object (GET_PRIV (self)->shortcuts,
                            "notify",
                            G_CALLBACK (ptyxis_window_shortcuts_notify_cb),
                            self,
                            G_CONNECT_SWAPPED);
-  ptyxis_window_shortcuts_notify_cb (self, NULL, self->shortcuts);
+  ptyxis_window_shortcuts_notify_cb (self, NULL, GET_PRIV (self)->shortcuts);
 
-  adw_tab_view_set_shortcuts (self->tab_view, 0);
+  adw_tab_view_set_shortcuts (GET_PRIV (self)->tab_view, 0);
 
-  g_binding_group_bind (self->active_tab_bindings, "profile",
-                        self->profile_bindings, "source",
+  g_binding_group_bind (GET_PRIV (self)->active_tab_bindings, "profile",
+                        GET_PRIV (self)->profile_bindings, "source",
                         G_BINDING_SYNC_CREATE);
-  g_binding_group_bind_full (self->active_tab_bindings, "title",
+  g_binding_group_bind_full (GET_PRIV (self)->active_tab_bindings, "title",
                              self, "title",
                              G_BINDING_SYNC_CREATE,
-                             bind_title_cb, NULL, NULL, NULL);
+                             _ptyxis_window_bind_title_cb, NULL, NULL, NULL);
 
   click = GTK_GESTURE_CLICK (gtk_gesture_click_new ());
   gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (click), 2);
@@ -2215,12 +2307,12 @@ ptyxis_window_init (PtyxisWindow *self)
                            G_CALLBACK (ptyxis_window_tab_bar_click_pressed_cb),
                            self,
                            G_CONNECT_SWAPPED);
-  gtk_widget_add_controller (GTK_WIDGET (self->tab_bar),
+  gtk_widget_add_controller (GTK_WIDGET (GET_PRIV (self)->tab_bar),
                              GTK_EVENT_CONTROLLER (g_steal_pointer (&click)));
 
-  gtk_custom_filter_set_filter_func (self->not_containers_filter,
+  gtk_custom_filter_set_filter_func (GET_PRIV (self)->not_containers_filter,
                                      empty_display_name, NULL, NULL);
-  gtk_custom_filter_set_filter_func (self->maybe_containers_filter,
+  gtk_custom_filter_set_filter_func (GET_PRIV (self)->maybe_containers_filter,
                                      nonempty_display_name, NULL, NULL);
 }
 
@@ -2335,7 +2427,7 @@ ptyxis_window_append_tab (PtyxisWindow *self,
   g_return_if_fail (PTYXIS_IS_WINDOW (self));
   g_return_if_fail (PTYXIS_IS_TAB (tab));
 
-  page = adw_tab_view_append (self->tab_view, GTK_WIDGET (tab));
+  page = adw_tab_view_append (GET_PRIV (self)->tab_view, GTK_WIDGET (tab));
 
   ptyxis_window_setup_page (self, tab, page);
 
@@ -2374,7 +2466,7 @@ ptyxis_window_new_for_command (PtyxisProfile      *profile,
       GApplication *app = G_APPLICATION (PTYXIS_APPLICATION_DEFAULT);
       GApplicationFlags flags = g_application_get_flags (app);
 
-      self->single_terminal_mode = !!(flags & G_APPLICATION_NON_UNIQUE);
+      GET_PRIV (self)->single_terminal_mode = !!(flags & G_APPLICATION_NON_UNIQUE);
 
       gtk_widget_action_set_enabled (GTK_WIDGET (self), "win.new-tab", FALSE);
       gtk_widget_action_set_enabled (GTK_WIDGET (self), "win.new-window", FALSE);
@@ -2391,9 +2483,9 @@ ptyxis_window_new_for_command (PtyxisProfile      *profile,
       gtk_widget_action_set_enabled (GTK_WIDGET (self), "win.undo-close-tab", FALSE);
       gtk_widget_action_set_enabled (GTK_WIDGET (self), "my-computer", FALSE);
 
-      gtk_widget_set_visible (GTK_WIDGET (self->tab_bar), FALSE);
-      gtk_widget_set_visible (self->new_tab_box, FALSE);
-      gtk_widget_set_visible (self->tab_overview_button, FALSE);
+      gtk_widget_set_visible (GTK_WIDGET (GET_PRIV (self)->tab_bar), FALSE);
+      gtk_widget_set_visible (GET_PRIV (self)->new_tab_box, FALSE);
+      gtk_widget_set_visible (GET_PRIV (self)->tab_overview_button, FALSE);
     }
 
   return self;
@@ -2422,9 +2514,9 @@ ptyxis_window_add_tab (PtyxisWindow *self,
   settings = ptyxis_application_get_settings (app);
   new_tab_position = ptyxis_settings_get_new_tab_position (settings);
 
-  if ((page = adw_tab_view_get_selected_page (self->tab_view)))
+  if ((page = adw_tab_view_get_selected_page (GET_PRIV (self)->tab_view)))
     {
-      position = adw_tab_view_get_page_position (self->tab_view, page);
+      position = adw_tab_view_get_page_position (GET_PRIV (self)->tab_view, page);
 
       switch (new_tab_position)
         {
@@ -2433,7 +2525,7 @@ ptyxis_window_add_tab (PtyxisWindow *self,
           break;
 
         case PTYXIS_NEW_TAB_POSITION_LAST:
-          position = adw_tab_view_get_n_pages (self->tab_view);
+          position = adw_tab_view_get_n_pages (GET_PRIV (self)->tab_view);
           break;
 
         default:
@@ -2441,12 +2533,12 @@ ptyxis_window_add_tab (PtyxisWindow *self,
         }
     }
 
-  page = adw_tab_view_insert (self->tab_view, GTK_WIDGET (tab), position);
+  page = adw_tab_view_insert (GET_PRIV (self)->tab_view, GTK_WIDGET (tab), position);
 
   ptyxis_window_setup_page (self, tab, page);
 
   /* Resize if we are going from 1->2 tabs */
-  if (adw_tab_view_get_n_pages (self->tab_view) == 2)
+  if (adw_tab_view_get_n_pages (GET_PRIV (self)->tab_view) == 2)
     gtk_window_set_default_size (GTK_WINDOW (self), -1, -1);
 }
 
@@ -2460,13 +2552,13 @@ ptyxis_window_add_tab_at_end (PtyxisWindow *self,
   g_return_if_fail (PTYXIS_IS_WINDOW (self));
   g_return_if_fail (PTYXIS_IS_TAB (tab));
 
-  position = adw_tab_view_get_n_pages (self->tab_view);
-  page = adw_tab_view_insert (self->tab_view, GTK_WIDGET (tab), position);
+  position = adw_tab_view_get_n_pages (GET_PRIV (self)->tab_view);
+  page = adw_tab_view_insert (GET_PRIV (self)->tab_view, GTK_WIDGET (tab), position);
 
   ptyxis_window_setup_page (self, tab, page);
 
   /* Resize if we are going from 1->2 tabs */
-  if (adw_tab_view_get_n_pages (self->tab_view) == 2)
+  if (adw_tab_view_get_n_pages (GET_PRIV (self)->tab_view) == 2)
     gtk_window_set_default_size (GTK_WINDOW (self), -1, -1);
 }
 
@@ -2477,10 +2569,10 @@ ptyxis_window_get_active_tab (PtyxisWindow *self)
 
   g_return_val_if_fail (PTYXIS_IS_WINDOW (self), NULL);
 
-  if (self->tab_view == NULL)
+  if (GET_PRIV (self)->tab_view == NULL)
     return NULL;
 
-  if (!(page = adw_tab_view_get_selected_page (self->tab_view)))
+  if (!(page = adw_tab_view_get_selected_page (GET_PRIV (self)->tab_view)))
     return NULL;
 
   return PTYXIS_TAB (adw_tab_page_get_child (page));
@@ -2495,16 +2587,16 @@ ptyxis_window_set_active_tab (PtyxisWindow *self,
   g_return_if_fail (PTYXIS_IS_WINDOW (self));
   g_return_if_fail (!tab || PTYXIS_IS_TAB (tab));
 
-  if (self->tab_view == NULL)
+  if (GET_PRIV (self)->tab_view == NULL)
     return;
 
   if (tab == NULL)
     return;
 
-  if (!(page = adw_tab_view_get_page (self->tab_view, GTK_WIDGET (tab))))
+  if (!(page = adw_tab_view_get_page (GET_PRIV (self)->tab_view, GTK_WIDGET (tab))))
     return;
 
-  adw_tab_view_set_selected_page (self->tab_view, page);
+  adw_tab_view_set_selected_page (GET_PRIV (self)->tab_view, page);
 }
 
 static gboolean
@@ -2514,9 +2606,9 @@ ptyxis_window_remove_visual_bell (gpointer data)
 
   g_assert (PTYXIS_IS_WINDOW (self));
 
-  self->visual_bell_source = 0;
+  GET_PRIV (self)->visual_bell_source = 0;
 
-  gtk_widget_remove_css_class (GTK_WIDGET (self->visual_bell), "visual-bell");
+  gtk_widget_remove_css_class (GTK_WIDGET (GET_PRIV (self)->visual_bell), "visual-bell");
 
   return G_SOURCE_REMOVE;
 }
@@ -2532,16 +2624,16 @@ ptyxis_window_visual_bell (PtyxisWindow *self)
   if (!ptyxis_settings_get_visual_bell (settings))
     return;
 
-  gtk_widget_add_css_class (GTK_WIDGET (self->visual_bell), "visual-bell");
+  gtk_widget_add_css_class (GTK_WIDGET (GET_PRIV (self)->visual_bell), "visual-bell");
 
-  g_clear_handle_id (&self->visual_bell_source, g_source_remove);
+  g_clear_handle_id (&GET_PRIV (self)->visual_bell_source, g_source_remove);
 
-  self->visual_bell_source = g_timeout_add_full (G_PRIORITY_HIGH_IDLE,
-                                                 /* Sync duration with style.css */
-                                                 500,
-                                                 ptyxis_window_remove_visual_bell,
-                                                 g_object_ref (self),
-                                                 g_object_unref);
+  GET_PRIV (self)->visual_bell_source = g_timeout_add_full (G_PRIORITY_HIGH_IDLE,
+                                                             /* Sync duration with style.css */
+                                                             500,
+                                                             ptyxis_window_remove_visual_bell,
+                                                             g_object_ref (self),
+                                                             g_object_unref);
 }
 
 /**
@@ -2577,7 +2669,7 @@ ptyxis_window_list_pages (PtyxisWindow *self)
 {
   g_return_val_if_fail (PTYXIS_IS_WINDOW (self), NULL);
 
-  return G_LIST_MODEL (adw_tab_view_get_pages (self->tab_view));
+  return G_LIST_MODEL (adw_tab_view_get_pages (GET_PRIV (self)->tab_view));
 }
 
 gboolean
@@ -2590,7 +2682,7 @@ ptyxis_window_focus_tab_by_uuid (PtyxisWindow *self,
   g_return_val_if_fail (PTYXIS_IS_WINDOW (self), FALSE);
   g_return_val_if_fail (uuid != NULL, FALSE);
 
-  model = adw_tab_view_get_pages (self->tab_view);
+  model = adw_tab_view_get_pages (GET_PRIV (self)->tab_view);
   n_items = g_list_model_get_n_items (G_LIST_MODEL (model));
 
   for (guint i = 0; i < n_items; i++)
@@ -2617,5 +2709,105 @@ ptyxis_window_is_animating (PtyxisWindow *self)
 {
   g_return_val_if_fail (PTYXIS_IS_WINDOW (self), FALSE);
 
-  return self->tab_overview_animating;
+  return GET_PRIV (self)->tab_overview_animating;
+}
+
+PtyxisTerminalSurface *
+ptyxis_window_get_active_surface (PtyxisWindow *self)
+{
+  g_return_val_if_fail (PTYXIS_IS_WINDOW (self), NULL);
+
+  return PTYXIS_WINDOW_GET_CLASS (self)->get_active_surface (self);
+}
+
+PtyxisTerminalSurface *
+ptyxis_window_add_terminal (PtyxisWindow  *self,
+                            PtyxisProfile *profile)
+{
+  g_return_val_if_fail (PTYXIS_IS_WINDOW (self), NULL);
+  g_return_val_if_fail (PTYXIS_IS_PROFILE (profile), NULL);
+
+  return PTYXIS_WINDOW_GET_CLASS (self)->add_terminal (self, profile);
+}
+
+void
+ptyxis_window_collect_surfaces (PtyxisWindow *self,
+                                GPtrArray    *surfaces)
+{
+  g_return_if_fail (PTYXIS_IS_WINDOW (self));
+  g_return_if_fail (surfaces != NULL);
+
+  PTYXIS_WINDOW_GET_CLASS (self)->collect_surfaces (self, surfaces);
+}
+
+gboolean
+ptyxis_window_focus_by_uuid (PtyxisWindow *self,
+                             const char   *uuid)
+{
+  g_return_val_if_fail (PTYXIS_IS_WINDOW (self), FALSE);
+  g_return_val_if_fail (uuid != NULL, FALSE);
+
+  return PTYXIS_WINDOW_GET_CLASS (self)->focus_by_uuid (self, uuid);
+}
+
+guint
+ptyxis_window_get_n_pages (PtyxisWindow *self)
+{
+  g_return_val_if_fail (PTYXIS_IS_WINDOW (self), 0);
+
+  return PTYXIS_WINDOW_GET_CLASS (self)->get_n_pages (self);
+}
+
+GVariant *
+ptyxis_window_serialize (PtyxisWindow *self)
+{
+  g_return_val_if_fail (PTYXIS_IS_WINDOW (self), NULL);
+
+  return PTYXIS_WINDOW_GET_CLASS (self)->serialize (self);
+}
+
+gboolean
+ptyxis_window_deserialize (PtyxisWindow *self,
+                           GVariant     *state)
+{
+  g_return_val_if_fail (PTYXIS_IS_WINDOW (self), FALSE);
+  g_return_val_if_fail (state != NULL, FALSE);
+
+  return PTYXIS_WINDOW_GET_CLASS (self)->deserialize (self, state);
+}
+
+void
+ptyxis_window_configure_popover (PtyxisWindow *self,
+                                 GtkWidget    *popover)
+{
+  g_return_if_fail (PTYXIS_IS_WINDOW (self));
+  g_return_if_fail (GTK_IS_WIDGET (popover));
+
+  PTYXIS_WINDOW_GET_CLASS (self)->configure_popover (self, popover);
+}
+
+void
+ptyxis_window_open_new_window (PtyxisWindow  *self,
+                               PtyxisProfile *profile,
+                               const char    *container_id)
+{
+  g_return_if_fail (PTYXIS_IS_WINDOW (self));
+
+  PTYXIS_WINDOW_GET_CLASS (self)->open_new_window (self, profile, container_id);
+}
+
+gboolean
+ptyxis_window_resize_for_zoom (PtyxisWindow *self)
+{
+  g_return_val_if_fail (PTYXIS_IS_WINDOW (self), FALSE);
+
+  return PTYXIS_WINDOW_GET_CLASS (self)->resize_for_zoom (self);
+}
+
+GtkWindow *
+ptyxis_window_create_preferences_window (PtyxisWindow *self)
+{
+  g_return_val_if_fail (PTYXIS_IS_WINDOW (self), NULL);
+
+  return PTYXIS_WINDOW_GET_CLASS (self)->create_preferences_window (self);
 }
