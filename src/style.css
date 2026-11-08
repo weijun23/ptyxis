@@ -176,3 +176,107 @@ window.has-tab-bar .visual-bell-area {
   padding-top: 3px;
   padding-bottom: 3px;
 }
+
+separator.split-handle.vertical {
+  min-width: 9px;
+  background: linear-gradient(to right,
+    transparent 4px, alpha(black, 0.15) 4px,
+    alpha(black, 0.15) 5px, transparent 5px);
+}
+
+separator.split-handle.horizontal {
+  min-height: 9px;
+  background: linear-gradient(to bottom,
+    transparent 4px, alpha(black, 0.15) 4px,
+    alpha(black, 0.15) 5px, transparent 5px);
+}
+
+@media (prefers-color-scheme: dark) {
+  separator.split-handle.vertical {
+    background: linear-gradient(to right,
+      transparent 4px, alpha(black, 0.5) 4px,
+      alpha(black, 0.5) 5px, transparent 5px);
+  }
+
+  separator.split-handle.horizontal {
+    background: linear-gradient(to bottom,
+      transparent 4px, alpha(black, 0.5) 4px,
+      alpha(black, 0.5) 5px, transparent 5px);
+  }
+}
+
+.pane-chrome {
+  min-height: 26px;
+  padding: 6px 6px;
+}
+
+.pane-chrome label {
+  font-weight: normal;
+}
+
+.pane-chrome > menubutton > button {
+  padding: 2px 6px;
+  background-color: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.pane-chrome > menubutton > button:hover {
+  background-color: color-mix(in srgb, currentColor 15%, transparent);
+}
+
+.pane-chrome > menubutton > button:active {
+  background-color: color-mix(in srgb, currentColor 30%, transparent);
+}
+
+.pane-chrome > menubutton,
+.pane-chrome > box > button {
+  margin-left: 6px;
+}
+
+.pane-chrome > box > button {
+  background: none;
+  box-shadow: none;
+  min-height: 0;
+  min-width: 0;
+  padding: 0;
+}
+
+.pane-chrome > box > button > image {
+  border-radius: 100%;
+  padding: 4px;
+}
+
+.pane-chrome > box > button:hover > image {
+  background-color: color-mix(in srgb, currentColor 15%, transparent);
+}
+
+.pane-chrome > box > button:active > image {
+  background-color: color-mix(in srgb, currentColor 30%, transparent);
+}
+
+.pane-close-dialog {
+  background-color: alpha(black, 0.5);
+}
+
+.pane-close-dialog-box {
+  background-color: @dialog_bg_color;
+  color: @dialog_fg_color;
+  border-radius: 12px;
+  padding: 24px;
+  margin: 24px;
+}
+
+.drop-highlight.drop-top {
+  background: linear-gradient(to bottom, alpha(@accent_bg_color, 0.3) 50%, transparent 50%);
+}
+
+.drop-highlight.drop-bottom {
+  background: linear-gradient(to top, alpha(@accent_bg_color, 0.3) 50%, transparent 50%);
+}
+
+.drop-highlight.drop-left {
+  background: linear-gradient(to right, alpha(@accent_bg_color, 0.3) 50%, transparent 50%);
+}
+
+.drop-highlight.drop-right {
+  background: linear-gradient(to left, alpha(@accent_bg_color, 0.3) 50%, transparent 50%);
+}

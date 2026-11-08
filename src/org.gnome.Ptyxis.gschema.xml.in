@@ -659,6 +659,60 @@
       <description>Undo closing of last tab</description>
     </key>
 
+    <key name="split-down" type="s">
+      <default>'&lt;ctrl&gt;&lt;alt&gt;d'</default>
+      <summary>Split Down</summary>
+      <description>Split the focused pane vertically</description>
+    </key>
+
+    <key name="split-right" type="s">
+      <default>'&lt;ctrl&gt;&lt;alt&gt;r'</default>
+      <summary>Split Right</summary>
+      <description>Split the focused pane horizontally</description>
+    </key>
+
+    <key name="close-pane" type="s">
+      <default>'&lt;ctrl&gt;&lt;alt&gt;w'</default>
+      <summary>Close Pane</summary>
+      <description>Close the focused pane</description>
+    </key>
+
+    <key name="undo-close-pane" type="s">
+      <default>'&lt;ctrl&gt;&lt;shift&gt;&lt;alt&gt;w'</default>
+      <summary>Undo Close Pane</summary>
+      <description>Undo closing of last pane</description>
+    </key>
+
+    <key name="focus-pane-up" type="s">
+      <default>'&lt;alt&gt;Up'</default>
+      <summary>Focus Pane Up</summary>
+      <description>Move focus to the pane above</description>
+    </key>
+
+    <key name="focus-pane-down" type="s">
+      <default>'&lt;alt&gt;Down'</default>
+      <summary>Focus Pane Down</summary>
+      <description>Move focus to the pane below</description>
+    </key>
+
+    <key name="focus-pane-left" type="s">
+      <default>'&lt;alt&gt;Left'</default>
+      <summary>Focus Pane Left</summary>
+      <description>Move focus to the pane on the left</description>
+    </key>
+
+    <key name="focus-pane-right" type="s">
+      <default>'&lt;alt&gt;Right'</default>
+      <summary>Focus Pane Right</summary>
+      <description>Move focus to the pane on the right</description>
+    </key>
+
+    <key name="toggle-maximize-pane" type="s">
+      <default>'&lt;alt&gt;x'</default>
+      <summary>Toggle Maximize Pane</summary>
+      <description>Maximize or restore the focused pane</description>
+    </key>
+
   </schema>
 
 </schemalist>

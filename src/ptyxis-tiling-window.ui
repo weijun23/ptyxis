@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2024 Sebastian Wick
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+  SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<interface>
+  <requires lib="gtk" version="4.0"/>
+  <requires lib="Adw" version="1.0"/>
+  <template class="PtyxisTilingWindow" parent="PtyxisWindow">
+    <style>
+      <class name="ptyxis-window"/>
+    </style>
+    <property name="width-request">360</property>
+    <property name="height-request">294</property>
+    <child>
+      <object class="GtkShortcutController">
+        <property name="propagation-phase">capture</property>
+        <child>
+          <object class="GtkShortcut">
+            <binding name="trigger">
+              <lookup name="primary-menu" type="PtyxisShortcuts">
+                <lookup name="shortcuts">PtyxisTilingWindow</lookup>
+              </lookup>
+            </binding>
+            <property name="action">action(win.primary-menu)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <binding name="trigger">
+              <lookup name="set-title" type="PtyxisShortcuts">
+                <lookup name="shortcuts">PtyxisTilingWindow</lookup>
+              </lookup>
+            </binding>
+            <property name="action">action(win.set-title)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <binding name="trigger">
+              <lookup name="search" type="PtyxisShortcuts">
+                <lookup name="shortcuts">PtyxisTilingWindow</lookup>
+              </lookup>
+            </binding>
+            <property name="action">action(win.search)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <binding name="trigger">
+              <lookup name="new-window" type="PtyxisShortcuts">
+                <lookup name="shortcuts">PtyxisTilingWindow</lookup>
+              </lookup>
+            </binding>
+            <property name="action">action(win.new-window)</property>
+            <property name="arguments">('','')</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <binding name="trigger">
+              <lookup name="new-tab" type="PtyxisShortcuts">
+                <lookup name="shortcuts">PtyxisTilingWindow</lookup>
+              </lookup>
+            </binding>
+            <property name="action">action(win.new-tab)</property>
+            <property name="arguments">('','')</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <binding name="trigger">
+              <lookup name="preferences" type="PtyxisShortcuts">
+                <lookup name="shortcuts">PtyxisTilingWindow</lookup>
+              </lookup>
+            </binding>
+            <property name="action">action(win.preferences)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <binding name="trigger">
+              <lookup name="show-keyboard-shortcuts" type="PtyxisShortcuts">
+                <lookup name="shortcuts">PtyxisTilingWindow</lookup>
+              </lookup>
+            </binding>
+            <property name="action">action(win.show-keyboard-shortcuts)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <binding name="trigger">
+              <lookup name="zoom-out" type="PtyxisShortcuts">
+                <lookup name="shortcuts">PtyxisTilingWindow</lookup>
+              </lookup>
+            </binding>
+            <property name="action">action(win.zoom-out)</property>
+            <property name="arguments">true</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <binding name="trigger">
+              <lookup name="zoom-one" type="PtyxisShortcuts">
+                <lookup name="shortcuts">PtyxisTilingWindow</lookup>
+              </lookup>
+            </binding>
+            <property name="action">action(win.zoom-one)</property>
+            <property name="arguments">true</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <binding name="trigger">
+              <lookup name="zoom-in" type="PtyxisShortcuts">
+                <lookup name="shortcuts">PtyxisTilingWindow</lookup>
+              </lookup>
+            </binding>
+            <property name="action">action(win.zoom-in)</property>
+            <property name="arguments">true</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <binding name="trigger">
+              <lookup name="toggle-fullscreen" type="PtyxisShortcuts">
+                <lookup name="shortcuts">PtyxisTilingWindow</lookup>
+              </lookup>
+            </binding>
+            <property name="action">action(win.toggle-fullscreen)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <binding name="trigger">
+              <lookup name="close-window" type="PtyxisShortcuts">
+                <lookup name="shortcuts">PtyxisTilingWindow</lookup>
+              </lookup>
+            </binding>
+            <property name="action">action(window.close)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <binding name="trigger">
+              <lookup name="split-down" type="PtyxisShortcuts">
+                <lookup name="shortcuts">PtyxisTilingWindow</lookup>
+              </lookup>
+            </binding>
+            <property name="action">action(win.split-down)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <binding name="trigger">
+              <lookup name="split-right" type="PtyxisShortcuts">
+                <lookup name="shortcuts">PtyxisTilingWindow</lookup>
+              </lookup>
+            </binding>
+            <property name="action">action(win.split-right)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <binding name="trigger">
+              <lookup name="close-pane" type="PtyxisShortcuts">
+                <lookup name="shortcuts">PtyxisTilingWindow</lookup>
+              </lookup>
+            </binding>
+            <property name="action">action(win.close-pane)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <binding name="trigger">
+              <lookup name="undo-close-pane" type="PtyxisShortcuts">
+                <lookup name="shortcuts">PtyxisTilingWindow</lookup>
+              </lookup>
+            </binding>
+            <property name="action">action(win.undo-close-pane)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <binding name="trigger">
+              <lookup name="focus-pane-up" type="PtyxisShortcuts">
+                <lookup name="shortcuts">PtyxisTilingWindow</lookup>
+              </lookup>
+            </binding>
+            <property name="action">action(win.focus-pane-up)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <binding name="trigger">
+              <lookup name="focus-pane-down" type="PtyxisShortcuts">
+                <lookup name="shortcuts">PtyxisTilingWindow</lookup>
+              </lookup>
+            </binding>
+            <property name="action">action(win.focus-pane-down)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <binding name="trigger">
+              <lookup name="focus-pane-left" type="PtyxisShortcuts">
+                <lookup name="shortcuts">PtyxisTilingWindow</lookup>
+              </lookup>
+            </binding>
+            <property name="action">action(win.focus-pane-left)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <binding name="trigger">
+              <lookup name="focus-pane-right" type="PtyxisShortcuts">
+                <lookup name="shortcuts">PtyxisTilingWindow</lookup>
+              </lookup>
+            </binding>
+            <property name="action">action(win.focus-pane-right)</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkShortcut">
+            <binding name="trigger">
+              <lookup name="toggle-maximize-pane" type="PtyxisShortcuts">
+                <lookup name="shortcuts">PtyxisTilingWindow</lookup>
+              </lookup>
+            </binding>
+            <property name="action">action(win.toggle-maximize-pane)</property>
+          </object>
+        </child>
+      </object>
+    </child>
+    <property name="content">
+      <object class="PtyxisFullscreenBox" id="fullscreen_box">
+        <child type="top">
+          <object class="GtkBox" id="visual_bell">
+            <style>
+              <class name="visual-bell-area"/>
+            </style>
+            <property name="orientation">vertical</property>
+            <child>
+              <object class="PtyxisShrinker">
+                <property name="hexpand">true</property>
+                <child>
+                  <object class="AdwHeaderBar" id="header_bar">
+                    <style>
+                      <class name="main-header-bar"/>
+                    </style>
+                    <property name="show-start-title-buttons" bind-source="PtyxisTilingWindow" bind-property="fullscreened" bind-flags="sync-create|invert-boolean"/>
+                    <property name="show-end-title-buttons" bind-source="PtyxisTilingWindow" bind-property="fullscreened" bind-flags="sync-create|invert-boolean"/>
+                    <child type="end">
+                      <object class="GtkButton" id="restore_button">
+                        <property name="tooltip-text" translatable="yes">Leave Fullscreen</property>
+                        <property name="icon-name">view-restore-symbolic</property>
+                        <property name="action-name">win.unfullscreen</property>
+                        <property name="visible" bind-source="PtyxisTilingWindow" bind-property="fullscreened" bind-flags="sync-create"/>
+                      </object>
+                    </child>
+                    <child type="title">
+                      <object class="AdwWindowTitle" id="title_widget">
+                      </object>
+                    </child>
+                    <child type="end">
+                      <object class="GtkMenuButton" id="primary_menu_button">
+                        <property name="icon-name">open-menu-symbolic</property>
+                        <property name="tooltip-text" translatable="yes">Main Menu</property>
+                        <property name="menu-model">primary_menu</property>
+                        <property name="focus-on-click">false</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <property name="content">
+          <object class="GtkBox">
+            <property name="orientation">vertical</property>
+            <property name="vexpand">true</property>
+            <child>
+              <object class="AdwToastOverlay" id="toasts">
+                <property name="vexpand">true</property>
+              </object>
+            </child>
+            <child>
+              <object class="GtkRevealer" id="find_bar_revealer">
+                <style>
+                  <class name="tiling-find-bar"/>
+                </style>
+                <property name="reveal-child">false</property>
+                <property name="transition-duration">0</property>
+                <child>
+                  <object class="PtyxisFindBar" id="find_bar">
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </property>
+      </object>
+    </property>
+  </template>
+  <menu id="primary_menu">
+    <section>
+      <item>
+        <attribute name="custom">interface-style</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="id">new-window</attribute>
+        <attribute name="label" translatable="yes">New _Window</attribute>
+        <attribute name="action">win.new-window</attribute>
+        <attribute name="target" type="(ss)">('default','')</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="id">toggle-fullscreen</attribute>
+        <attribute name="label" translatable="yes">Fullscreen</attribute>
+        <attribute name="action">win.fullscreen</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
+        <attribute name="id">toggle-fullscreen</attribute>
+        <attribute name="label" translatable="yes">Leave Fullscreen</attribute>
+        <attribute name="action">win.unfullscreen</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="id">preferences</attribute>
+        <attribute name="label" translatable="yes">_Preferences</attribute>
+        <attribute name="action">win.preferences</attribute>
+      </item>
+      <item>
+        <attribute name="id">show-keyboard-shortcuts</attribute>
+        <attribute name="label" translatable="yes">_Keyboard Shortcuts</attribute>
+        <attribute name="action">win.show-keyboard-shortcuts</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_About</attribute>
+        <attribute name="action">app.about</attribute>
+      </item>
+    </section>
+  </menu>
+</interface>

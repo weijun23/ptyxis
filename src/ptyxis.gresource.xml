@@ -13,6 +13,7 @@
     <file preprocess="xml-stripblanks">ptyxis-profile-row.ui</file>
     <file preprocess="xml-stripblanks">ptyxis-shortcut-accel-dialog.ui</file>
     <file preprocess="xml-stripblanks">ptyxis-shortcut-row.ui</file>
+    <file preprocess="xml-stripblanks">ptyxis-pane.ui</file>
     <file preprocess="xml-stripblanks">ptyxis-tab.ui</file>
     <file preprocess="xml-stripblanks">ptyxis-terminal.ui</file>
     <file preprocess="xml-stripblanks">ptyxis-theme-selector.ui</file>
@@ -21,6 +22,9 @@
     <file preprocess="xml-stripblanks">ptyxis-tabbed-preferences-window.ui</file>
     <file preprocess="xml-stripblanks">ptyxis-tabbed-terminal-menu.ui</file>
     <file preprocess="xml-stripblanks">ptyxis-tabbed-window.ui</file>
+    <file preprocess="xml-stripblanks">ptyxis-tiling-terminal-menu.ui</file>
+    <file preprocess="xml-stripblanks">ptyxis-tiling-preferences-window.ui</file>
+    <file preprocess="xml-stripblanks">ptyxis-tiling-window.ui</file>
 
     <!-- Icons -->
     <file preprocess="xml-stripblanks">icons/enter-keyboard-shortcut.svg</file>
@@ -32,6 +36,8 @@
     <file preprocess="xml-stripblanks">icons/scalable/actions/event-log-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/process-remote-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/process-superuser-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/actions/split-pane-down-symbolic.svg</file>
+    <file preprocess="xml-stripblanks">icons/scalable/actions/split-pane-right-symbolic.svg</file>
     <file preprocess="xml-stripblanks">icons/scalable/actions/up-small-symbolic.svg</file>
 
     <!-- CSS -->

@@ -36,6 +36,7 @@
 #include "ptyxis-settings.h"
 #include "ptyxis-terminal-intent.h"
 #include "ptyxis-tabbed-window.h"
+#include "ptyxis-tiling-window.h"
 #include "ptyxis-util.h"
 #include "ptyxis-window.h"
 
@@ -62,6 +63,7 @@ struct _PtyxisApplication
   guint                 client_is_fallback : 1;
   guint                 maximize : 1;
   guint                 fullscreen : 1;
+  guint                 tiling : 1;
 };
 
 static void ptyxis_application_about             (GSimpleAction *action,
@@ -444,6 +446,9 @@ ptyxis_application_command_line (GApplication            *app,
 
   if (g_variant_dict_lookup (dict, "fullscreen", "b", &fullscreen))
     self->fullscreen = !!fullscreen;
+
+  if (g_variant_dict_contains (dict, "tiling"))
+    self->tiling = TRUE;
 
   if (self->fullscreen && self->maximize)
     {
@@ -1210,6 +1215,8 @@ ptyxis_application_init (PtyxisApplication *self)
 
     /* Standalone (single instance mode) */
     { "standalone", 's', 0, G_OPTION_ARG_NONE, NULL, N_("Start a new instance, ignoring existing instances") },
+    { "tiling", 0, 0, G_OPTION_ARG_NONE, NULL, N_("Use tiling panes instead of tabs") },
+
     { "title", 'T', 0, G_OPTION_ARG_STRING, NULL, N_("Set title for new tab") },
     { "maximize", 0, 0, G_OPTION_ARG_NONE, NULL, N_("Maximize a newly created window") },
     { "fullscreen", 0, 0, G_OPTION_ARG_NONE, NULL, N_("Fullscreen a newly created window") },
@@ -2285,9 +2292,13 @@ ptyxis_application_new_window (PtyxisApplication *self)
 PtyxisWindow *
 ptyxis_application_new_window_empty (PtyxisApplication *self)
 {
+  GType type;
+
   g_return_val_if_fail (PTYXIS_IS_APPLICATION (self), NULL);
 
-  return g_object_new (PTYXIS_TYPE_TABBED_WINDOW,
+  type = self->tiling ? PTYXIS_TYPE_TILING_WINDOW : PTYXIS_TYPE_TABBED_WINDOW;
+
+  return g_object_new (type,
                        "application", self,
                        NULL);
 }
@@ -2297,6 +2308,9 @@ ptyxis_application_new_window_for_profile (PtyxisApplication *self,
                                            PtyxisProfile     *profile)
 {
   g_return_val_if_fail (PTYXIS_IS_APPLICATION (self), NULL);
+
+  if (self->tiling)
+    return PTYXIS_WINDOW (ptyxis_tiling_window_new (profile));
 
   return PTYXIS_WINDOW (ptyxis_tabbed_window_new_for_profile (profile));
 }
@@ -2310,6 +2324,22 @@ ptyxis_application_new_window_for_command (PtyxisApplication  *self,
   g_return_val_if_fail (PTYXIS_IS_APPLICATION (self), NULL);
   g_return_val_if_fail (argv != NULL, NULL);
   g_return_val_if_fail (argv[0] != NULL, NULL);
+
+  if (self->tiling)
+    {
+      PtyxisWindow *window;
+      PtyxisTerminalSurface *surface;
+
+      window = ptyxis_application_new_window_for_profile (self, profile);
+      surface = ptyxis_window_get_active_surface (window);
+
+      ptyxis_terminal_surface_set_command (surface, argv);
+
+      if (!ptyxis_str_empty0 (cwd_uri))
+        ptyxis_terminal_surface_set_previous_working_directory_uri (surface, cwd_uri);
+
+      return window;
+    }
 
   return PTYXIS_WINDOW (ptyxis_tabbed_window_new_for_command (profile, argv, cwd_uri));
 }
