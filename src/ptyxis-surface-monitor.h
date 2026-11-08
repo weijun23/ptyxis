@@ -1,7 +1,8 @@
 /*
- * ptyxis-tab-monitor.h
+ * ptyxis-surface-monitor.h
  *
  * Copyright 2023 Christian Hergert <christian@sourceandstack.com>
+ * Copyright 2024 Sebastian Wick
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,17 +24,18 @@
 
 #include <gio/gio.h>
 
-#include "ptyxis-tab.h"
+#include "ptyxis-terminal-surface.h"
 
 G_BEGIN_DECLS
 
-#define PTYXIS_TYPE_TAB_MONITOR (ptyxis_tab_monitor_get_type())
+#define PTYXIS_TYPE_SURFACE_MONITOR (ptyxis_surface_monitor_get_type())
 
-G_DECLARE_FINAL_TYPE (PtyxisTabMonitor, ptyxis_tab_monitor, PTYXIS, TAB_MONITOR, GObject)
+G_DECLARE_FINAL_TYPE (PtyxisSurfaceMonitor, ptyxis_surface_monitor, PTYXIS, SURFACE_MONITOR, GObject)
 
-PtyxisTabMonitor *ptyxis_tab_monitor_new                 (PtyxisTab        *tab);
-gboolean          ptyxis_tab_monitor_get_has_pressed_key (PtyxisTabMonitor *self);
-void              ptyxis_tab_monitor_set_has_pressed_key (PtyxisTabMonitor *self,
-                                                          gboolean          has_pressed_key);
+PtyxisSurfaceMonitor *ptyxis_surface_monitor_new                 (PtyxisTerminalSurface *surface,
+                                                                   GtkWidget             *owner);
+gboolean              ptyxis_surface_monitor_get_has_pressed_key (PtyxisSurfaceMonitor  *self);
+void                  ptyxis_surface_monitor_set_has_pressed_key (PtyxisSurfaceMonitor  *self,
+                                                                   gboolean               has_pressed_key);
 
 G_END_DECLS

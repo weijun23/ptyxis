@@ -32,7 +32,6 @@
 #include "ptyxis-preferences-window.h"
 #include "ptyxis-settings.h"
 #include "ptyxis-shrinker.h"
-#include "ptyxis-tab-monitor.h"
 #include "ptyxis-tab-private.h"
 #include "ptyxis-theme-selector.h"
 #include "ptyxis-title-dialog.h"
