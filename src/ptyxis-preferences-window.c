@@ -33,11 +33,11 @@
 #include "ptyxis-palette-preview.h"
 #include "ptyxis-preferences-list-item.h"
 #include "ptyxis-preferences-window.h"
+#include "ptyxis-preferences-window-private.h"
 #include "ptyxis-profile-editor.h"
 #include "ptyxis-profile-row.h"
 #include "ptyxis-shortcut-row.h"
 #include "ptyxis-util.h"
-
 
 /* This will not transition to AdwDialog until there is a way for
  * toplevel windows _with_ transient-for set to maintain window
@@ -45,102 +45,15 @@
  */
 G_GNUC_BEGIN_IGNORE_DEPRECATIONS
 
-struct _PtyxisPreferencesWindow
+G_DEFINE_TYPE_WITH_PRIVATE (PtyxisPreferencesWindow, ptyxis_preferences_window, ADW_TYPE_PREFERENCES_WINDOW)
+
+#define GET_PRIV(self) ((PtyxisPreferencesWindowPrivate *)ptyxis_preferences_window_get_instance_private (self))
+
+PtyxisPreferencesWindowPrivate *
+_ptyxis_preferences_window_get_priv (PtyxisPreferencesWindow *self)
 {
-  AdwPreferencesWindow  parent_instance;
-
-  char                 *default_palette_id;
-  GtkCustomFilter      *filter;
-  GtkFilterListModel   *filter_palettes;
-  guint                 filter_show_more : 1;
-
-  AdwSwitchRow         *audible_bell;
-  AdwComboRow          *backspace_binding;
-  AdwSpinRow           *cell_height_scale;
-  AdwSpinRow           *cell_width_scale;
-  AdwComboRow          *cjk_ambiguous_width;
-  GListModel           *cjk_ambiguous_widths;
-  AdwComboRow          *cursor_blink_mode;
-  GListModel           *cursor_blink_modes;
-  AdwComboRow          *cursor_shape;
-  GListModel           *cursor_shapes;
-  AdwComboRow          *delete_binding;
-  AdwSwitchRow         *disable_dynamic_title;
-  AdwSwitchRow         *enable_a11y;
-  GListModel           *erase_bindings;
-  AdwComboRow          *exit_action;
-  GListModel           *exit_actions;
-  GtkLabel             *font_name;
-  AdwActionRow         *font_name_row;
-  AdwSwitchRow         *limit_scrollback;
-  AdwSwitchRow         *login_shell;
-  GtkAdjustment        *opacity_adjustment;
-  AdwPreferencesGroup  *opacity_group;
-  GtkLabel             *opacity_label;
-  GtkFlowBox           *palette_previews;
-  AdwComboRow          *preserve_directory;
-  GListModel           *preserve_directories;
-  GtkListBox           *profiles_list_box;
-  AdwSwitchRow         *restore_session;
-  GtkSwitch            *restore_window_size;
-  AdwSpinRow           *default_rows;
-  AdwSpinRow           *default_columns;
-  AdwSpinRow           *scrollback_lines;
-  AdwSwitchRow         *scroll_on_output;
-  AdwSwitchRow         *scroll_on_keystroke;
-  AdwComboRow          *scrollbar_policy;
-  GListModel           *scrollbar_policies;
-  PtyxisShortcutRow    *shortcut_close_other_tabs;
-  PtyxisShortcutRow    *shortcut_close_tab;
-  PtyxisShortcutRow    *shortcut_close_window;
-  PtyxisShortcutRow    *shortcut_copy_clipboard;
-  PtyxisShortcutRow    *shortcut_detach_tab;
-  PtyxisShortcutRow    *shortcut_focus_tab_10;
-  PtyxisShortcutRow    *shortcut_focus_tab_1;
-  PtyxisShortcutRow    *shortcut_focus_tab_2;
-  PtyxisShortcutRow    *shortcut_focus_tab_3;
-  PtyxisShortcutRow    *shortcut_focus_tab_4;
-  PtyxisShortcutRow    *shortcut_focus_tab_5;
-  PtyxisShortcutRow    *shortcut_focus_tab_6;
-  PtyxisShortcutRow    *shortcut_focus_tab_7;
-  PtyxisShortcutRow    *shortcut_focus_tab_8;
-  PtyxisShortcutRow    *shortcut_focus_tab_9;
-  PtyxisShortcutRow    *shortcut_focus_tab_last;
-  PtyxisShortcutRow    *shortcut_move_next_tab;
-  PtyxisShortcutRow    *shortcut_move_previous_tab;
-  PtyxisShortcutRow    *shortcut_move_tab_left;
-  PtyxisShortcutRow    *shortcut_move_tab_right;
-  PtyxisShortcutRow    *shortcut_new_tab;
-  PtyxisShortcutRow    *shortcut_new_window;
-  PtyxisShortcutRow    *shortcut_paste_clipboard;
-  PtyxisShortcutRow    *shortcut_popup_menu;
-  PtyxisShortcutRow    *shortcut_set_title;
-  PtyxisShortcutRow    *shortcut_preferences;
-  PtyxisShortcutRow    *shortcut_show_keyboard_shortcuts;
-  PtyxisShortcutRow    *shortcut_primary_menu;
-  PtyxisShortcutRow    *shortcut_tab_menu;
-  PtyxisShortcutRow    *shortcut_reset;
-  PtyxisShortcutRow    *shortcut_reset_and_clear;
-  PtyxisShortcutRow    *shortcut_search;
-  PtyxisShortcutRow    *shortcut_select_all;
-  PtyxisShortcutRow    *shortcut_select_none;
-  PtyxisShortcutRow    *shortcut_tab_overview;
-  PtyxisShortcutRow    *shortcut_toggle_fullscreen;
-  PtyxisShortcutRow    *shortcut_undo_close_tab;
-  PtyxisShortcutRow    *shortcut_zoom_in;
-  PtyxisShortcutRow    *shortcut_zoom_one;
-  PtyxisShortcutRow    *shortcut_zoom_out;
-  AdwButtonContent     *show_more_palettes;
-  AdwComboRow          *tab_position;
-  GListModel           *tab_positions;
-  AdwComboRow          *text_blink_mode;
-  GListModel           *text_blink_modes;
-  AdwSwitchRow         *use_system_font;
-  AdwSwitchRow         *visual_bell;
-  GtkListBox           *custom_links_list_box;
-};
-
-G_DEFINE_FINAL_TYPE (PtyxisPreferencesWindow, ptyxis_preferences_window, ADW_TYPE_PREFERENCES_WINDOW)
+  return GET_PRIV (self);
+}
 
 enum {
   PROP_0,
@@ -148,7 +61,6 @@ enum {
   N_PROPS
 };
 
-static PtyxisPreferencesWindow *instance;
 static GParamSpec *properties[N_PROPS];
 
 static gboolean
@@ -171,6 +83,7 @@ ptyxis_preferences_window_spin_row_show_decimal_cb (PtyxisPreferencesWindow *sel
 static void
 invalidate_filter (PtyxisPreferencesWindow *self)
 {
+  PtyxisPreferencesWindowPrivate *priv = GET_PRIV (self);
   g_autoptr(PtyxisProfile) default_profile = NULL;
   g_autofree char *default_palette_id = NULL;
 
@@ -178,9 +91,9 @@ invalidate_filter (PtyxisPreferencesWindow *self)
 
   default_profile = ptyxis_application_dup_default_profile (PTYXIS_APPLICATION_DEFAULT);
   default_palette_id = ptyxis_profile_dup_palette_id (default_profile);
-  g_set_str (&self->default_palette_id, default_palette_id);
+  g_set_str (&priv->default_palette_id, default_palette_id);
 
-  gtk_filter_changed (GTK_FILTER (self->filter), GTK_FILTER_CHANGE_DIFFERENT);
+  gtk_filter_changed (GTK_FILTER (priv->filter), GTK_FILTER_CHANGE_DIFFERENT);
 }
 
 static gboolean
@@ -188,6 +101,7 @@ do_filter_palettes (gpointer item,
                     gpointer user_data)
 {
   PtyxisPreferencesWindow *self = user_data;
+  PtyxisPreferencesWindowPrivate *priv = GET_PRIV (self);
   PtyxisPalette *palette = item;
   AdwStyleManager *style_manager;
   gboolean dark;
@@ -195,10 +109,10 @@ do_filter_palettes (gpointer item,
   if (ptyxis_palette_is_primary (palette))
     return TRUE;
 
-  if (g_strcmp0 (self->default_palette_id, ptyxis_palette_get_id (palette)) == 0)
+  if (g_strcmp0 (priv->default_palette_id, ptyxis_palette_get_id (palette)) == 0)
     return TRUE;
 
-  if (!self->filter_show_more)
+  if (!priv->filter_show_more)
     return FALSE;
 
   style_manager = adw_style_manager_get_default ();
@@ -343,23 +257,25 @@ static gboolean
 ptyxis_preferences_window_show_all_cb (PtyxisPreferencesWindow *self,
                                        GtkButton               *button)
 {
+  PtyxisPreferencesWindowPrivate *priv = GET_PRIV (self);
+
   g_assert (PTYXIS_IS_PREFERENCES_WINDOW (self));
   g_assert (GTK_IS_BUTTON (button));
 
-  self->filter_show_more = !self->filter_show_more;
+  priv->filter_show_more = !priv->filter_show_more;
 
-  if (self->filter_show_more)
+  if (priv->filter_show_more)
     {
-      adw_button_content_set_label (self->show_more_palettes, _("Show Fewer Palettes"));
-      adw_button_content_set_icon_name (self->show_more_palettes, "up-small-symbolic");
+      adw_button_content_set_label (priv->show_more_palettes, _("Show Fewer Palettes"));
+      adw_button_content_set_icon_name (priv->show_more_palettes, "up-small-symbolic");
     }
   else
     {
-      adw_button_content_set_label (self->show_more_palettes, _("Show All Palettes"));
-      adw_button_content_set_icon_name (self->show_more_palettes, "down-small-symbolic");
+      adw_button_content_set_label (priv->show_more_palettes, _("Show All Palettes"));
+      adw_button_content_set_icon_name (priv->show_more_palettes, "down-small-symbolic");
     }
 
-  gtk_filter_changed (GTK_FILTER (self->filter), GTK_FILTER_CHANGE_DIFFERENT);
+  gtk_filter_changed (GTK_FILTER (priv->filter), GTK_FILTER_CHANGE_DIFFERENT);
 
   return TRUE;
 }
@@ -387,8 +303,8 @@ ptyxis_preferences_window_create_profile_row_cb (gpointer item,
     }
 }
 
-static gboolean
-string_to_index (GValue   *value,
+gboolean
+ptyxis_preferences_window_string_to_index (GValue   *value,
                  GVariant *variant,
                  gpointer  user_data)
 {
@@ -410,8 +326,8 @@ string_to_index (GValue   *value,
   return FALSE;
 }
 
-static GVariant *
-index_to_string (const GValue       *value,
+GVariant *
+ptyxis_preferences_window_index_to_string (const GValue       *value,
                  const GVariantType *type,
                  gpointer            user_data)
 {
@@ -493,6 +409,7 @@ ptyxis_preferences_window_notify_default_profile_cb (PtyxisPreferencesWindow *se
                                                      GParamSpec              *pspec,
                                                      PtyxisApplication       *app)
 {
+  PtyxisPreferencesWindowPrivate *priv = GET_PRIV (self);
   g_autoptr(PtyxisProfile) profile = NULL;
   g_autoptr(GPropertyAction) palette_action = NULL;
   g_autoptr(GSettings) gsettings = NULL;
@@ -516,12 +433,12 @@ ptyxis_preferences_window_notify_default_profile_cb (PtyxisPreferencesWindow *se
    * also helps on installations where the distributor may have changed
    * the default value for the opacity gsetting.
    */
-  gtk_widget_set_visible (GTK_WIDGET (self->opacity_group),
+  gtk_widget_set_visible (GTK_WIDGET (priv->opacity_group),
                           ptyxis_profile_get_opacity (profile) < 1.);
 
   invalidate_filter (self);
 
-  for (GtkWidget *child = gtk_widget_get_first_child (GTK_WIDGET (self->palette_previews));
+  for (GtkWidget *child = gtk_widget_get_first_child (GTK_WIDGET (priv->palette_previews));
        child;
        child = gtk_widget_get_next_sibling (child))
     {
@@ -542,88 +459,88 @@ ptyxis_preferences_window_notify_default_profile_cb (PtyxisPreferencesWindow *se
                                   G_ACTION_GROUP (group));
 
   g_object_bind_property (profile, "opacity",
-                          self->opacity_adjustment, "value",
+                          priv->opacity_adjustment, "value",
                           G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
   g_object_bind_property_full (profile, "opacity",
-                               self->opacity_label, "label",
+                               priv->opacity_label, "label",
                                G_BINDING_SYNC_CREATE,
                                opacity_to_label, NULL, NULL, NULL);
   g_object_bind_property (profile, "limit-scrollback",
-                          self->limit_scrollback, "active",
+                          priv->limit_scrollback, "active",
                           G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
   g_object_bind_property (profile, "scroll-on-output",
-                          self->scroll_on_output, "active",
+                          priv->scroll_on_output, "active",
                           G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
   g_object_bind_property (profile, "scroll-on-keystroke",
-                          self->scroll_on_keystroke, "active",
+                          priv->scroll_on_keystroke, "active",
                           G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
   g_object_bind_property (profile, "scrollback-lines",
-                          self->scrollback_lines, "value",
+                          priv->scrollback_lines, "value",
                           G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
   g_object_bind_property (profile, "cell-height-scale",
-                          self->cell_height_scale, "value",
+                          priv->cell_height_scale, "value",
                           G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
   g_object_bind_property (profile, "cell-width-scale",
-                          self->cell_width_scale, "value",
+                          priv->cell_width_scale, "value",
                           G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
   g_object_bind_property (profile, "login-shell",
-                          self->login_shell, "active",
+                          priv->login_shell, "active",
                           G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
 
   g_settings_bind_with_mapping (gsettings,
                                 PTYXIS_PROFILE_KEY_BACKSPACE_BINDING,
-                                self->backspace_binding,
+                                priv->backspace_binding,
                                 "selected",
                                 G_SETTINGS_BIND_DEFAULT,
-                                string_to_index,
-                                index_to_string,
-                                g_object_ref (self->erase_bindings),
+                                ptyxis_preferences_window_string_to_index,
+                                ptyxis_preferences_window_index_to_string,
+                                g_object_ref (priv->erase_bindings),
                                 g_object_unref);
 
   g_settings_bind_with_mapping (gsettings,
                                 PTYXIS_PROFILE_KEY_DELETE_BINDING,
-                                self->delete_binding,
+                                priv->delete_binding,
                                 "selected",
                                 G_SETTINGS_BIND_DEFAULT,
-                                string_to_index,
-                                index_to_string,
-                                g_object_ref (self->erase_bindings),
+                                ptyxis_preferences_window_string_to_index,
+                                ptyxis_preferences_window_index_to_string,
+                                g_object_ref (priv->erase_bindings),
                                 g_object_unref);
 
   g_settings_bind_with_mapping (gsettings,
                                 PTYXIS_PROFILE_KEY_CJK_AMBIGUOUS_WIDTH,
-                                self->cjk_ambiguous_width,
+                                priv->cjk_ambiguous_width,
                                 "selected",
                                 G_SETTINGS_BIND_DEFAULT,
-                                string_to_index,
-                                index_to_string,
-                                g_object_ref (self->cjk_ambiguous_widths),
+                                ptyxis_preferences_window_string_to_index,
+                                ptyxis_preferences_window_index_to_string,
+                                g_object_ref (priv->cjk_ambiguous_widths),
                                 g_object_unref);
 
   g_settings_bind_with_mapping (gsettings,
                                 PTYXIS_PROFILE_KEY_EXIT_ACTION,
-                                self->exit_action,
+                                priv->exit_action,
                                 "selected",
                                 G_SETTINGS_BIND_DEFAULT,
-                                string_to_index,
-                                index_to_string,
-                                g_object_ref (self->exit_actions),
+                                ptyxis_preferences_window_string_to_index,
+                                ptyxis_preferences_window_index_to_string,
+                                g_object_ref (priv->exit_actions),
                                 g_object_unref);
 
   g_settings_bind_with_mapping (gsettings,
                                 PTYXIS_PROFILE_KEY_PRESERVE_DIRECTORY,
-                                self->preserve_directory,
+                                priv->preserve_directory,
                                 "selected",
                                 G_SETTINGS_BIND_DEFAULT,
-                                string_to_index,
-                                index_to_string,
-                                g_object_ref (self->preserve_directories),
+                                ptyxis_preferences_window_string_to_index,
+                                ptyxis_preferences_window_index_to_string,
+                                g_object_ref (priv->preserve_directories),
                                 g_object_unref);
 
   custom_links_list = ptyxis_profile_list_custom_links (profile);
   custom_links_list_model = ptyxis_add_button_list_model_new (custom_links_list);
 
-  gtk_list_box_bind_model (self->custom_links_list_box,
+  gtk_list_box_bind_model (priv->custom_links_list_box,
                            G_LIST_MODEL (custom_links_list_model),
                            ptyxis_preferences_window_create_custom_link_row_cb,
                            g_object_ref(self),
@@ -769,25 +686,20 @@ ptyxis_preferences_window_close_request (GtkWindow *window)
 
   g_assert (PTYXIS_IS_PREFERENCES_WINDOW (window));
 
-  if (instance == PTYXIS_PREFERENCES_WINDOW (window))
-    {
-      instance = NULL;
+  /* We use a single window group for the preferences window
+   * so that it can stack appropriately above other windows.
+   * Clear it so that we release the group too.
+   */
+  if ((group = gtk_window_get_group (window)))
+    gtk_window_group_remove_window (group, window);
 
-      /* We use a single window group for the preferences window
-       * so that it can stack appropriately above other windows.
-       * Clear it so that we release the group too.
-       */
-      if ((group = gtk_window_get_group (window)))
-        gtk_window_group_remove_window (group, window);
-
-      /* Dispose in idle to force cleanup. This wasn't seeming to
-       * happen automatically on close-request.
-       */
-      g_idle_add_full (G_PRIORITY_LOW,
-                       dispose_in_idle,
-                       g_object_ref (window),
-                       g_object_unref);
-    }
+  /* Dispose in idle to force cleanup. This wasn't seeming to
+   * happen automatically on close-request.
+   */
+  g_idle_add_full (G_PRIORITY_LOW,
+                   dispose_in_idle,
+                   g_object_ref (window),
+                   g_object_unref);
 
   return GTK_WINDOW_CLASS (ptyxis_preferences_window_parent_class)->close_request (window);
 }
@@ -796,9 +708,9 @@ static void
 ptyxis_preferences_window_constructed (GObject *object)
 {
   PtyxisPreferencesWindow *self = (PtyxisPreferencesWindow *)object;
+  PtyxisPreferencesWindowPrivate *priv = GET_PRIV (self);
   PtyxisApplication *app = PTYXIS_APPLICATION_DEFAULT;
   PtyxisSettings *settings = ptyxis_application_get_settings (app);
-  PtyxisShortcuts *shortcuts = ptyxis_application_get_shortcuts (app);
   GSettings *gsettings = ptyxis_settings_get_settings (settings);
   AdwStyleManager *style_manager = adw_style_manager_get_default ();
   g_autoptr(GListModel) profiles = NULL;
@@ -806,17 +718,17 @@ ptyxis_preferences_window_constructed (GObject *object)
 
   G_OBJECT_CLASS (ptyxis_preferences_window_parent_class)->constructed (object);
 
-  self->filter = gtk_custom_filter_new (do_filter_palettes, self, NULL);
-  self->filter_palettes = gtk_filter_list_model_new (g_object_ref (ptyxis_palette_get_all ()),
-                                                     g_object_ref (GTK_FILTER (self->filter)));
+  priv->filter = gtk_custom_filter_new (do_filter_palettes, self, NULL);
+  priv->filter_palettes = gtk_filter_list_model_new (g_object_ref (ptyxis_palette_get_all ()),
+                                                     g_object_ref (GTK_FILTER (priv->filter)));
   g_signal_connect_object (style_manager,
                            "notify::dark",
                            G_CALLBACK (invalidate_filter),
                            self,
                            G_CONNECT_SWAPPED);
 
-  gtk_flow_box_bind_model (self->palette_previews,
-                           G_LIST_MODEL (self->filter_palettes),
+  gtk_flow_box_bind_model (priv->palette_previews,
+                           G_LIST_MODEL (priv->filter_palettes),
                            create_palette_preview,
                            g_object_ref (style_manager),
                            g_object_unref);
@@ -829,246 +741,109 @@ ptyxis_preferences_window_constructed (GObject *object)
   ptyxis_preferences_window_notify_default_profile_cb (self, NULL, app);
 
   g_settings_bind_with_mapping (gsettings,
-                                PTYXIS_SETTING_KEY_NEW_TAB_POSITION,
-                                self->tab_position,
-                                "selected",
-                                G_SETTINGS_BIND_DEFAULT,
-                                string_to_index,
-                                index_to_string,
-                                g_object_ref (self->tab_positions),
-                                g_object_unref);
-
-  g_settings_bind_with_mapping (gsettings,
                                 PTYXIS_SETTING_KEY_CURSOR_SHAPE,
-                                self->cursor_shape,
+                                priv->cursor_shape,
                                 "selected",
                                 G_SETTINGS_BIND_DEFAULT,
-                                string_to_index,
-                                index_to_string,
-                                g_object_ref (self->cursor_shapes),
+                                ptyxis_preferences_window_string_to_index,
+                                ptyxis_preferences_window_index_to_string,
+                                g_object_ref (priv->cursor_shapes),
                                 g_object_unref);
 
   g_settings_bind_with_mapping (gsettings,
                                 PTYXIS_SETTING_KEY_CURSOR_BLINK_MODE,
-                                self->cursor_blink_mode,
+                                priv->cursor_blink_mode,
                                 "selected",
                                 G_SETTINGS_BIND_DEFAULT,
-                                string_to_index,
-                                index_to_string,
-                                g_object_ref (self->cursor_blink_modes),
+                                ptyxis_preferences_window_string_to_index,
+                                ptyxis_preferences_window_index_to_string,
+                                g_object_ref (priv->cursor_blink_modes),
                                 g_object_unref);
 
   g_settings_bind_with_mapping (gsettings,
                                 PTYXIS_SETTING_KEY_SCROLLBAR_POLICY,
-                                self->scrollbar_policy,
+                                priv->scrollbar_policy,
                                 "selected",
                                 G_SETTINGS_BIND_DEFAULT,
-                                string_to_index,
-                                index_to_string,
-                                g_object_ref (self->scrollbar_policies),
+                                ptyxis_preferences_window_string_to_index,
+                                ptyxis_preferences_window_index_to_string,
+                                g_object_ref (priv->scrollbar_policies),
                                 g_object_unref);
 
   g_settings_bind_with_mapping (gsettings,
                                 PTYXIS_SETTING_KEY_TEXT_BLINK_MODE,
-                                self->text_blink_mode,
+                                priv->text_blink_mode,
                                 "selected",
                                 G_SETTINGS_BIND_DEFAULT,
-                                string_to_index,
-                                index_to_string,
-                                g_object_ref (self->text_blink_modes),
+                                ptyxis_preferences_window_string_to_index,
+                                ptyxis_preferences_window_index_to_string,
+                                g_object_ref (priv->text_blink_modes),
                                 g_object_unref);
 
   profiles = ptyxis_application_list_profiles (app);
   profiles_list_model = ptyxis_add_button_list_model_new (profiles);
 
-  gtk_list_box_bind_model (self->profiles_list_box,
+  gtk_list_box_bind_model (priv->profiles_list_box,
                            G_LIST_MODEL (profiles_list_model),
                            ptyxis_preferences_window_create_profile_row_cb,
                            NULL, NULL);
 
   g_object_bind_property (settings, "audible-bell",
-                          self->audible_bell, "active",
+                          priv->audible_bell, "active",
                           G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
   g_object_bind_property (settings, "visual-bell",
-                          self->visual_bell, "active",
+                          priv->visual_bell, "active",
                           G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
   g_object_bind_property (settings, "disable-dynamic-title",
-                          self->disable_dynamic_title, "active",
+                          priv->disable_dynamic_title, "active",
                           G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
   g_object_bind_property (settings, "restore-session",
-                          self->restore_session, "active",
+                          priv->restore_session, "active",
                           G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
   g_object_bind_property (settings, "restore-window-size",
-                          self->restore_window_size, "active",
+                          priv->restore_window_size, "active",
                           G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
   g_object_bind_property (settings, "use-system-font",
-                          self->use_system_font, "active",
+                          priv->use_system_font, "active",
                           G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
 
   g_object_bind_property (settings, "default-columns",
-                          self->default_columns, "value",
+                          priv->default_columns, "value",
                           G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
   g_object_bind_property (settings, "default-rows",
-                          self->default_rows, "value",
+                          priv->default_rows, "value",
                           G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
 
   g_object_bind_property (settings, "font-name",
-                          self->font_name, "label",
+                          priv->font_name, "label",
                           G_BINDING_SYNC_CREATE);
   g_object_bind_property (settings, "use-system-font",
-                          self->font_name, "sensitive",
+                          priv->font_name, "sensitive",
                           G_BINDING_SYNC_CREATE | G_BINDING_INVERT_BOOLEAN);
   g_object_bind_property (settings, "use-system-font",
-                          self->font_name_row, "activatable",
+                          priv->font_name_row, "activatable",
                           G_BINDING_SYNC_CREATE | G_BINDING_INVERT_BOOLEAN);
   g_object_bind_property (settings, "enable-a11y",
-                          self->enable_a11y, "active",
+                          priv->enable_a11y, "active",
                           G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
 
-  g_object_bind_property (shortcuts, "new-tab",
-                          self->shortcut_new_tab, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "new-window",
-                          self->shortcut_new_window, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "tab-overview",
-                          self->shortcut_tab_overview, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-
-  g_object_bind_property (shortcuts, "focus-tab-1",
-                          self->shortcut_focus_tab_1, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "focus-tab-2",
-                          self->shortcut_focus_tab_2, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "focus-tab-3",
-                          self->shortcut_focus_tab_3, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "focus-tab-4",
-                          self->shortcut_focus_tab_4, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "focus-tab-5",
-                          self->shortcut_focus_tab_5, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "focus-tab-6",
-                          self->shortcut_focus_tab_6, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "focus-tab-7",
-                          self->shortcut_focus_tab_7, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "focus-tab-8",
-                          self->shortcut_focus_tab_8, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "focus-tab-9",
-                          self->shortcut_focus_tab_9, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "focus-tab-10",
-                          self->shortcut_focus_tab_10, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "focus-tab-last",
-                          self->shortcut_focus_tab_last, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-
-  g_object_bind_property (shortcuts, "toggle-fullscreen",
-                          self->shortcut_toggle_fullscreen, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "preferences",
-                          self->shortcut_preferences, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "show-keyboard-shortcuts",
-                          self->shortcut_show_keyboard_shortcuts, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "primary-menu",
-                          self->shortcut_primary_menu, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "tab-menu",
-                          self->shortcut_tab_menu, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-
-  g_object_bind_property (shortcuts, "copy-clipboard",
-                          self->shortcut_copy_clipboard, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "paste-clipboard",
-                          self->shortcut_paste_clipboard, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-
-  g_object_bind_property (shortcuts, "reset",
-                          self->shortcut_reset, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "reset-and-clear",
-                          self->shortcut_reset_and_clear, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-
-  g_object_bind_property (shortcuts, "search",
-                          self->shortcut_search, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-
-  g_object_bind_property (shortcuts, "select-all",
-                          self->shortcut_select_all, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "select-none",
-                          self->shortcut_select_none, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-
-  g_object_bind_property (shortcuts, "popup-menu",
-                          self->shortcut_popup_menu, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-
-  g_object_bind_property (shortcuts, "set-title",
-                          self->shortcut_set_title, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-
-  g_object_bind_property (shortcuts, "zoom-in",
-                          self->shortcut_zoom_in, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "zoom-one",
-                          self->shortcut_zoom_one, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "zoom-out",
-                          self->shortcut_zoom_out, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-
-  g_object_bind_property (shortcuts, "close-tab",
-                          self->shortcut_close_tab, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "close-other-tabs",
-                          self->shortcut_close_other_tabs, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "undo-close-tab",
-                          self->shortcut_undo_close_tab, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "close-window",
-                          self->shortcut_close_window, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-
-  g_object_bind_property (shortcuts, "move-next-tab",
-                          self->shortcut_move_next_tab, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "move-previous-tab",
-                          self->shortcut_move_previous_tab, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-
-  g_object_bind_property (shortcuts, "move-tab-left",
-                          self->shortcut_move_tab_left, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "move-tab-right",
-                          self->shortcut_move_tab_right, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (shortcuts, "detach-tab",
-                          self->shortcut_detach_tab, "accelerator",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
+  ptyxis_preferences_window_bind_shortcut_rows (self, priv->shortcuts_page);
+  ptyxis_preferences_window_bind_shortcut_rows (self, GTK_WIDGET (priv->zoom_group));
+  ptyxis_preferences_window_bind_shortcut_rows (self, GTK_WIDGET (priv->app_group));
+  ptyxis_preferences_window_bind_shortcut_rows (self, GTK_WIDGET (priv->app_group_2));
 }
 
 static void
 ptyxis_preferences_window_dispose (GObject *object)
 {
   PtyxisPreferencesWindow *self = (PtyxisPreferencesWindow *)object;
+  PtyxisPreferencesWindowPrivate *priv = GET_PRIV (self);
 
   gtk_widget_dispose_template (GTK_WIDGET (self), PTYXIS_TYPE_PREFERENCES_WINDOW);
 
-  g_clear_pointer (&self->default_palette_id, g_free);
-  g_clear_object (&self->filter);
-  g_clear_object (&self->filter_palettes);
+  g_clear_pointer (&priv->default_palette_id, g_free);
+  g_clear_object (&priv->filter);
+  g_clear_object (&priv->filter_palettes);
 
   G_OBJECT_CLASS (ptyxis_preferences_window_parent_class)->dispose (object);
 }
@@ -1080,11 +855,12 @@ ptyxis_preferences_window_get_property (GObject    *object,
                                         GParamSpec *pspec)
 {
   PtyxisPreferencesWindow *self = PTYXIS_PREFERENCES_WINDOW (object);
+  PtyxisPreferencesWindowPrivate *priv = GET_PRIV (self);
 
   switch (prop_id)
     {
     case PROP_DEFAULT_PALETTE_ID:
-      g_value_set_string (value, self->default_palette_id);
+      g_value_set_string (value, priv->default_palette_id);
       break;
 
     default:
@@ -1099,13 +875,14 @@ ptyxis_preferences_window_set_property (GObject      *object,
                                         GParamSpec   *pspec)
 {
   PtyxisPreferencesWindow *self = PTYXIS_PREFERENCES_WINDOW (object);
+  PtyxisPreferencesWindowPrivate *priv = GET_PRIV (self);
 
   switch (prop_id)
     {
     case PROP_DEFAULT_PALETTE_ID:
-      if (g_set_str (&self->default_palette_id, g_value_get_string (value)))
+      if (g_set_str (&priv->default_palette_id, g_value_get_string (value)))
         {
-          gtk_filter_changed (GTK_FILTER (self->filter), GTK_FILTER_CHANGE_DIFFERENT);
+          gtk_filter_changed (GTK_FILTER (priv->filter), GTK_FILTER_CHANGE_DIFFERENT);
           g_object_notify_by_pspec (G_OBJECT (self), pspec);
         }
       break;
@@ -1140,90 +917,53 @@ ptyxis_preferences_window_class_init (PtyxisPreferencesWindowClass *klass)
 
   gtk_widget_class_set_template_from_resource (widget_class, "/org/gnome/Ptyxis/ptyxis-preferences-window.ui");
 
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, audible_bell);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, backspace_binding);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, cell_height_scale);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, cell_width_scale);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, cjk_ambiguous_width);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, cjk_ambiguous_widths);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, cursor_blink_mode);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, cursor_blink_modes);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, cursor_shape);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, cursor_shapes);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, custom_links_list_box);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, delete_binding);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, disable_dynamic_title);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, enable_a11y);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, erase_bindings);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, exit_action);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, exit_actions);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, font_name);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, font_name_row);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, limit_scrollback);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, login_shell);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, opacity_adjustment);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, opacity_group);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, opacity_label);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, palette_previews);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, preserve_directories);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, preserve_directory);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, profiles_list_box);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, restore_session);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, restore_window_size);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, default_rows);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, default_columns);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, scroll_on_keystroke);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, scroll_on_output);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, scrollback_lines);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, scrollbar_policies);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, scrollbar_policy);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_close_other_tabs);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_close_tab);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_close_window);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_copy_clipboard);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_detach_tab);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_focus_tab_1);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_focus_tab_10);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_focus_tab_2);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_focus_tab_3);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_focus_tab_4);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_focus_tab_5);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_focus_tab_6);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_focus_tab_7);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_focus_tab_8);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_focus_tab_9);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_focus_tab_last);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_move_next_tab);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_move_previous_tab);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_move_tab_left);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_move_tab_right);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_new_tab);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_new_window);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_paste_clipboard);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_popup_menu);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_set_title);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_preferences);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_show_keyboard_shortcuts);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_primary_menu);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_tab_menu);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_reset);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_reset_and_clear);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_search);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_select_all);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_select_none);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_tab_overview);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_toggle_fullscreen);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_undo_close_tab);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_zoom_in);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_zoom_one);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, shortcut_zoom_out);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, show_more_palettes);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, tab_position);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, tab_positions);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, text_blink_mode);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, text_blink_modes);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, use_system_font);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisPreferencesWindow, visual_bell);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, audible_bell);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, backspace_binding);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, cell_height_scale);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, cell_width_scale);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, cjk_ambiguous_width);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, cjk_ambiguous_widths);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, cursor_blink_mode);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, cursor_blink_modes);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, cursor_shape);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, cursor_shapes);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, custom_links_list_box);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, delete_binding);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, disable_dynamic_title);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, enable_a11y);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, interface_group);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, erase_bindings);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, exit_action);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, exit_actions);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, font_name);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, font_name_row);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, limit_scrollback);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, login_shell);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, opacity_adjustment);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, opacity_group);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, opacity_label);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, palette_previews);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, preserve_directories);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, preserve_directory);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, profiles_list_box);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, restore_session);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, restore_window_size);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, default_rows);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, default_columns);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, scroll_on_keystroke);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, scroll_on_output);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, scrollback_lines);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, scrollbar_policies);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, scrollbar_policy);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, show_more_palettes);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, text_blink_mode);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, text_blink_modes);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, use_system_font);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, visual_bell);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, shortcuts_page);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, zoom_group);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, app_group);
+  gtk_widget_class_bind_template_child_private (widget_class, PtyxisPreferencesWindow, app_group_2);
 
   gtk_widget_class_bind_template_callback (widget_class, ptyxis_preferences_window_profile_row_activated_cb);
   gtk_widget_class_bind_template_callback (widget_class, ptyxis_preferences_window_show_all_cb);
@@ -1255,6 +995,7 @@ ptyxis_preferences_window_class_init (PtyxisPreferencesWindowClass *klass)
 static void
 ptyxis_preferences_window_init (PtyxisPreferencesWindow *self)
 {
+  PtyxisPreferencesWindowPrivate *priv = GET_PRIV (self);
   GtkDropTarget *drop_target;
 
   gtk_widget_init_template (GTK_WIDGET (self));
@@ -1265,15 +1006,8 @@ ptyxis_preferences_window_init (PtyxisPreferencesWindow *self)
                            G_CALLBACK (ptyxis_preferences_window_drop_palette_cb),
                            self,
                            G_CONNECT_SWAPPED);
-  gtk_widget_add_controller (GTK_WIDGET (self->palette_previews),
+  gtk_widget_add_controller (GTK_WIDGET (priv->palette_previews),
                              GTK_EVENT_CONTROLLER (drop_target));
-}
-
-GtkWindow *
-ptyxis_preferences_window_new (GtkApplication* application)
-{
-  return g_object_new (PTYXIS_TYPE_PREFERENCES_WINDOW,
-                       NULL);
 }
 
 void
@@ -1292,29 +1026,6 @@ ptyxis_preferences_window_edit_profile (PtyxisPreferencesWindow *self,
                                        ADW_NAVIGATION_PAGE (editor));
 }
 
-/**
- * ptyxis_preferences_window_get_default:
- *
- * Gets the default preferences window for the process.
- *
- * Returns: (transfer none): a #PtyxisPreferencesWindow
- */
-PtyxisPreferencesWindow *
-ptyxis_preferences_window_get_default (void)
-{
-  if (instance == NULL)
-    {
-      g_autoptr(GtkWindowGroup) sole_group = gtk_window_group_new ();
-
-      instance = g_object_new (PTYXIS_TYPE_PREFERENCES_WINDOW,
-                               "modal", FALSE,
-                               NULL);
-      gtk_window_group_add_window (sole_group, GTK_WINDOW (instance));
-    }
-
-  return instance;
-}
-
 void
 ptyxis_preferences_window_edit_shortcuts (PtyxisPreferencesWindow *self)
 {
@@ -1322,6 +1033,44 @@ ptyxis_preferences_window_edit_shortcuts (PtyxisPreferencesWindow *self)
 
   adw_preferences_window_pop_subpage (ADW_PREFERENCES_WINDOW (self));
   adw_preferences_window_set_visible_page_name (ADW_PREFERENCES_WINDOW (self), "shortcuts");
+}
+
+static void
+bind_shortcut_rows_recursive (PtyxisShortcuts *shortcuts,
+                              GtkWidget       *widget)
+{
+  for (GtkWidget *child = gtk_widget_get_first_child (widget);
+       child != NULL;
+       child = gtk_widget_get_next_sibling (child))
+    {
+      if (PTYXIS_IS_SHORTCUT_ROW (child))
+        {
+          const char *name = ptyxis_shortcut_row_get_shortcut_name (PTYXIS_SHORTCUT_ROW (child));
+
+          if (name != NULL)
+            g_object_bind_property (shortcuts, name,
+                                    child, "accelerator",
+                                    G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
+        }
+      else
+        {
+          bind_shortcut_rows_recursive (shortcuts, child);
+        }
+    }
+}
+
+void
+ptyxis_preferences_window_bind_shortcut_rows (PtyxisPreferencesWindow *self,
+                                              GtkWidget               *page)
+{
+  PtyxisShortcuts *shortcuts;
+
+  g_return_if_fail (PTYXIS_IS_PREFERENCES_WINDOW (self));
+  g_return_if_fail (GTK_IS_WIDGET (page));
+
+  shortcuts = ptyxis_application_get_shortcuts (PTYXIS_APPLICATION_DEFAULT);
+
+  bind_shortcut_rows_recursive (shortcuts, page);
 }
 
 G_GNUC_END_IGNORE_DEPRECATIONS

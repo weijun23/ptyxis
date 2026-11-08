@@ -32,7 +32,7 @@
 #include "ptyxis-settings.h"
 #include "ptyxis-shrinker.h"
 #include "ptyxis-tab-private.h"
-#include "ptyxis-preferences-window.h"
+#include "ptyxis-tabbed-preferences-window.h"
 #include "ptyxis-tabbed-window.h"
 #include "ptyxis-terminal-surface.h"
 #include "ptyxis-util.h"
@@ -222,7 +222,7 @@ ptyxis_tabbed_window_surface_needs_attention_vfunc (PtyxisWindow          *windo
 static GtkWindow *
 ptyxis_tabbed_window_create_preferences_window_vfunc (PtyxisWindow *window)
 {
-  return ptyxis_preferences_window_new (GTK_APPLICATION (PTYXIS_APPLICATION_DEFAULT));
+  return g_object_new (PTYXIS_TYPE_TABBED_PREFERENCES_WINDOW, NULL);
 }
 
 static gboolean

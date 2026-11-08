@@ -29,6 +29,7 @@ ptyxis_sources = [
   'ptyxis-parking-lot.c',
   'ptyxis-preferences-list-item.c',
   'ptyxis-preferences-window.c',
+  'ptyxis-tabbed-preferences-window.c',
   'ptyxis-profile-editor.c',
   'ptyxis-profile-row.c',
   'ptyxis-profile.c',
