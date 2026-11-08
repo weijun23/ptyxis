@@ -24,6 +24,8 @@
 
 #include "ptyxis-inspector.h"
 #include "ptyxis-palette-preview-color.h"
+#include "ptyxis-tab.h"
+#include "ptyxis-terminal-surface.h"
 
 /* This will not transition to AdwDialog until there is a way for
  * toplevel windows _with_ transient-for set to maintain window
@@ -72,7 +74,7 @@ struct _PtyxisInspector
 
 enum {
   PROP_0,
-  PROP_TAB,
+  PROP_TERMINAL,
   N_PROPS
 };
 
@@ -80,21 +82,32 @@ G_DEFINE_FINAL_TYPE (PtyxisInspector, ptyxis_inspector, ADW_TYPE_PREFERENCES_WIN
 
 static GParamSpec *properties[N_PROPS];
 
+static PtyxisTerminalSurface *
+get_surface_for_terminal (PtyxisTerminal *terminal)
+{
+  return ptyxis_terminal_get_surface (terminal);
+}
+
 static void
 ptyxis_inspector_update_font (PtyxisInspector *self,
                               GParamSpec      *pspec,
                               PtyxisTerminal  *terminal)
 {
   const PangoFontDescription *font_desc = vte_terminal_get_font (VTE_TERMINAL (terminal));
-  PtyxisTab *tab = PTYXIS_TAB (gtk_widget_get_ancestor (GTK_WIDGET (terminal), PTYXIS_TYPE_TAB));
+  PtyxisTerminalSurface *surface = get_surface_for_terminal (terminal);
   g_autofree char *str = font_desc ? pango_font_description_to_string (font_desc) : NULL;
-  g_autofree char *label = ptyxis_tab_dup_zoom_label (tab);
   g_autoptr(GString) gstr = g_string_new (str);
 
   if (gstr->len == 0)
     g_string_append (gstr, _("unset"));
 
-  g_string_append_printf (gstr, " at %s", label);
+  if (surface != NULL)
+    {
+      g_autofree char *label = NULL;
+
+      label = ptyxis_terminal_surface_dup_zoom_label (surface);
+      g_string_append_printf (gstr, " at %s", label);
+    }
 
   adw_action_row_set_subtitle (self->font_desc, gstr->str);
 }
@@ -155,27 +168,30 @@ static void
 ptyxis_inspector_shell_preexec_cb (PtyxisInspector *self,
                                    PtyxisTerminal  *terminal)
 {
-  g_autoptr(PtyxisTab) tab = NULL;
+  PtyxisTerminalSurface *surface;
   g_autofree char *cmdline = NULL;
   GPid pid;
 
   g_assert (PTYXIS_IS_INSPECTOR (self));
   g_assert (PTYXIS_IS_TERMINAL (terminal));
 
-  if ((tab = ptyxis_inspector_dup_tab (self)) &&
-      ptyxis_tab_has_foreground_process (tab, &pid, &cmdline))
-    {
-      char pidstr[16];
+  surface = get_surface_for_terminal (terminal);
 
-      g_snprintf (pidstr, sizeof pidstr, "%d", pid);
-      gtk_label_set_label (self->pid, pidstr);
-      adw_action_row_set_subtitle (self->command, cmdline);
-    }
-  else
+  if (surface != NULL)
     {
-      gtk_label_set_label (self->pid, NULL);
-      adw_action_row_set_subtitle (self->command, _("Shell"));
+      if (ptyxis_terminal_surface_has_foreground_process (surface, &pid, &cmdline))
+        {
+          char pidstr[16];
+
+          g_snprintf (pidstr, sizeof pidstr, "%d", pid);
+          gtk_label_set_label (self->pid, pidstr);
+          adw_action_row_set_subtitle (self->command, cmdline);
+          return;
+        }
     }
+
+  gtk_label_set_label (self->pid, NULL);
+  adw_action_row_set_subtitle (self->command, _("Shell"));
 }
 
 static void
@@ -311,15 +327,11 @@ ptyxis_inspector_motion_notify_cb (PtyxisInspector          *self,
 }
 
 static void
-ptyxis_inspector_set_tab (PtyxisInspector *self,
-                          PtyxisTab       *tab)
+ptyxis_inspector_set_terminal (PtyxisInspector *self,
+                               PtyxisTerminal  *terminal)
 {
-  PtyxisTerminal *terminal;
-
   g_assert (PTYXIS_IS_INSPECTOR (self));
-  g_assert (PTYXIS_IS_TAB (tab));
-
-  terminal = ptyxis_tab_get_terminal (tab);
+  g_assert (PTYXIS_IS_TERMINAL (terminal));
 
   self->motion = gtk_event_controller_motion_new ();
   g_signal_connect_object (self->motion,
@@ -359,18 +371,12 @@ bind_with_empty (GBinding     *binding,
   return TRUE;
 }
 
-PtyxisTab *
-ptyxis_inspector_dup_tab (PtyxisInspector *self)
+static PtyxisTerminal *
+ptyxis_inspector_dup_terminal (PtyxisInspector *self)
 {
-  g_autoptr(PtyxisTerminal) terminal = NULL;
-  PtyxisTab *tab = NULL;
-
   g_return_val_if_fail (PTYXIS_IS_INSPECTOR (self), NULL);
 
-  if ((terminal = g_signal_group_dup_target (self->terminal_signals)))
-    tab = PTYXIS_TAB (gtk_widget_get_ancestor (GTK_WIDGET (terminal), PTYXIS_TYPE_TAB));
-
-  return tab ? g_object_ref (tab) : NULL;
+  return g_signal_group_dup_target (self->terminal_signals);
 }
 
 static void
@@ -411,8 +417,8 @@ ptyxis_inspector_get_property (GObject    *object,
 
   switch (prop_id)
     {
-    case PROP_TAB:
-      g_value_take_object (value, ptyxis_inspector_dup_tab (self));
+    case PROP_TERMINAL:
+      g_value_take_object (value, ptyxis_inspector_dup_terminal (self));
       break;
 
     default:
@@ -430,8 +436,8 @@ ptyxis_inspector_set_property (GObject      *object,
 
   switch (prop_id)
     {
-    case PROP_TAB:
-      ptyxis_inspector_set_tab (self, g_value_get_object (value));
+    case PROP_TERMINAL:
+      ptyxis_inspector_set_terminal (self, g_value_get_object (value));
       break;
 
     default:
@@ -450,9 +456,9 @@ ptyxis_inspector_class_init (PtyxisInspectorClass *klass)
   object_class->get_property = ptyxis_inspector_get_property;
   object_class->set_property = ptyxis_inspector_set_property;
 
-  properties[PROP_TAB] =
-    g_param_spec_object ("tab", NULL, NULL,
-                         PTYXIS_TYPE_TAB,
+  properties[PROP_TERMINAL] =
+    g_param_spec_object ("terminal", NULL, NULL,
+                         PTYXIS_TYPE_TERMINAL,
                          (G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS));
 
   g_object_class_install_properties (object_class, N_PROPS, properties);
@@ -593,8 +599,16 @@ ptyxis_inspector_new (PtyxisTab *tab)
 {
   g_return_val_if_fail (PTYXIS_IS_TAB (tab), NULL);
 
+  return ptyxis_inspector_new_for_terminal (ptyxis_tab_get_terminal (tab));
+}
+
+PtyxisInspector *
+ptyxis_inspector_new_for_terminal (PtyxisTerminal *terminal)
+{
+  g_return_val_if_fail (PTYXIS_IS_TERMINAL (terminal), NULL);
+
   return g_object_new (PTYXIS_TYPE_INSPECTOR,
-                       "tab", tab,
+                       "terminal", terminal,
                        NULL);
 }
 

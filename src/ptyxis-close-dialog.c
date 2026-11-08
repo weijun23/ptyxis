@@ -22,30 +22,28 @@
 
 #include <glib/gi18n.h>
 
-#include "ptyxis-tab.h"
 #include "ptyxis-close-dialog.h"
+#include "ptyxis-terminal-surface.h"
 #include "ptyxis-util.h"
-#include "ptyxis-window.h"
 
-typedef struct
+typedef struct _CloseRequest
 {
-  PtyxisTab       *tab;
-  AdwAlertDialog *dialog;
-} SaveRequest;
+  PtyxisTerminalSurface *surface; /* (owned) (not nullable) */
+  AdwAlertDialog        *dialog;  /* (owned) (not nullable) */
+} CloseRequest;
 
 static void
-save_request_clear (gpointer data)
+close_request_clear (gpointer data)
 {
-  SaveRequest *sr = data;
+  CloseRequest *cr = data;
 
-  g_clear_object (&sr->tab);
-  g_clear_object (&sr->dialog);
+  g_clear_object (&cr->surface);
+  g_clear_object (&cr->dialog);
 }
 
 static void
 ptyxis_close_dialog_confirm (AdwAlertDialog *dialog,
-                             GArray           *requests,
-                             gboolean          confirm)
+                             GArray         *requests)
 {
   g_assert (ADW_IS_ALERT_DIALOG (dialog));
   g_assert (requests != NULL);
@@ -53,27 +51,28 @@ ptyxis_close_dialog_confirm (AdwAlertDialog *dialog,
 
   gtk_widget_set_sensitive (GTK_WIDGET (dialog), FALSE);
 
-  for (guint i = 0; i < requests->len; i++)
+  for (unsigned int i = 0; i < requests->len; i++)
     {
-      const SaveRequest *sr = &g_array_index (requests, SaveRequest , i);
+      const CloseRequest *cr = &g_array_index (requests, CloseRequest, i);
 
-      ptyxis_tab_force_quit (sr->tab);
+      ptyxis_terminal_surface_force_quit (cr->surface);
     }
 }
 
 static void
 ptyxis_close_dialog_response (AdwAlertDialog *dialog,
-                              const char       *response,
-                              GArray           *requests)
+                              const char     *response,
+                              GArray         *requests)
 {
   GTask *task;
+
   g_assert (ADW_IS_ALERT_DIALOG (dialog));
 
   task = g_object_get_data (G_OBJECT (dialog), "G_TASK");
 
   if (!g_strcmp0 (response, "discard"))
     {
-      ptyxis_close_dialog_confirm (dialog, requests, TRUE);
+      ptyxis_close_dialog_confirm (dialog, requests);
       g_task_return_boolean (task, TRUE);
     }
   else
@@ -87,30 +86,41 @@ ptyxis_close_dialog_response (AdwAlertDialog *dialog,
 
 static AdwDialog *
 _ptyxis_close_dialog_new (GtkWindow *parent,
-                          GPtrArray *tabs)
+                          GPtrArray *surfaces,
+                          gboolean   is_window)
 {
   g_autoptr(GArray) requests = NULL;
+  const char *heading;
+  const char *body;
   const char *discard_label;
-  PangoAttrList *smaller;
   AdwDialog *dialog;
   GtkWidget *group;
 
   g_return_val_if_fail (!parent || GTK_IS_WINDOW (parent), NULL);
-  g_return_val_if_fail (tabs != NULL, NULL);
-  g_return_val_if_fail (tabs->len > 0, NULL);
-  g_return_val_if_fail (PTYXIS_IS_TAB (g_ptr_array_index (tabs, 0)), NULL);
+  g_return_val_if_fail (surfaces != NULL, NULL);
+  g_return_val_if_fail (surfaces->len > 0, NULL);
 
-  if (tabs->len == 1)
-    ptyxis_tab_raise (g_ptr_array_index (tabs, 0));
+  requests = g_array_new (/* zero_terminated = */ FALSE,
+                          /* clear_ = */ FALSE,
+                          sizeof (CloseRequest));
+  g_array_set_clear_func (requests, close_request_clear);
 
-  requests = g_array_new (FALSE, FALSE, sizeof (SaveRequest));
-  g_array_set_clear_func (requests, save_request_clear);
+  if (is_window)
+    {
+      heading = _("Close Window?");
+      body = _("Some processes are still running.");
+      discard_label = g_dngettext (GETTEXT_PACKAGE,
+                                   _("_Close"), _("_Close All"),
+                                   surfaces->len);
+    }
+  else
+    {
+      heading = _("Close Terminal?");
+      body = _("A process is still running.");
+      discard_label = _("_Close");
+    }
 
-  discard_label = g_dngettext (GETTEXT_PACKAGE, _("_Close"), _("_Close All"), tabs->len);
-
-  dialog = adw_alert_dialog_new (_("Close Window?"),
-                                   _("Some processes are still running."));
-  //gtk_widget_set_size_request (GTK_WIDGET (dialog), 400, -1);
+  dialog = adw_alert_dialog_new (heading, body);
 
   adw_alert_dialog_add_responses (ADW_ALERT_DIALOG (dialog),
                                     "cancel", _("_Cancel"),
@@ -122,20 +132,17 @@ _ptyxis_close_dialog_new (GtkWindow *parent,
   group = adw_preferences_group_new ();
   adw_alert_dialog_set_extra_child (ADW_ALERT_DIALOG (dialog), group);
 
-  smaller = pango_attr_list_new ();
-  pango_attr_list_insert (smaller, pango_attr_scale_new (0.8333));
-
-  for (guint i = 0; i < tabs->len; i++)
+  for (unsigned int i = 0; i < surfaces->len; i++)
     {
-      PtyxisTab *tab = g_ptr_array_index (tabs, i);
+      PtyxisTerminalSurface *surface = g_ptr_array_index (surfaces, i);
       g_autofree char *cmdline = NULL;
       g_autofree char *title = NULL;
       g_autofree char *subtitle = NULL;
       GtkWidget *row;
-      SaveRequest sr;
+      CloseRequest cr;
       GPid pid;
 
-      if (ptyxis_tab_has_foreground_process (tab, &pid, &cmdline))
+      if (ptyxis_terminal_surface_has_foreground_process (surface, &pid, &cmdline))
         {
           g_utf8_make_valid (cmdline, -1);
           title = g_steal_pointer (&cmdline);
@@ -143,8 +150,8 @@ _ptyxis_close_dialog_new (GtkWindow *parent,
         }
       else
         {
-          title = ptyxis_tab_dup_title (tab);
-          subtitle = ptyxis_tab_dup_subtitle (tab);
+          title = ptyxis_terminal_surface_dup_title (surface);
+          subtitle = ptyxis_terminal_surface_dup_subtitle (surface);
         }
 
       if (g_utf8_strlen (title, -1) > 200)
@@ -156,13 +163,11 @@ _ptyxis_close_dialog_new (GtkWindow *parent,
       adw_action_row_set_subtitle (ADW_ACTION_ROW (row), subtitle);
       adw_preferences_group_add (ADW_PREFERENCES_GROUP (group), row);
 
-      sr.tab = g_object_ref (tab);
-      sr.dialog = g_object_ref (ADW_ALERT_DIALOG (dialog));
+      cr.surface = g_object_ref (surface);
+      cr.dialog = g_object_ref (ADW_ALERT_DIALOG (dialog));
 
-      g_array_append_val (requests, sr);
+      g_array_append_val (requests, cr);
     }
-
-  pango_attr_list_unref (smaller);
 
   g_signal_connect_data (dialog,
                          "response",
@@ -176,7 +181,8 @@ _ptyxis_close_dialog_new (GtkWindow *parent,
 
 void
 _ptyxis_close_dialog_run_async (GtkWindow           *parent,
-                                GPtrArray           *tabs,
+                                GPtrArray           *surfaces,
+                                gboolean             is_window,
                                 GCancellable        *cancellable,
                                 GAsyncReadyCallback  callback,
                                 gpointer             user_data)
@@ -187,11 +193,11 @@ _ptyxis_close_dialog_run_async (GtkWindow           *parent,
   g_return_if_fail (!parent || GTK_IS_WINDOW (parent));
   g_return_if_fail (!cancellable || G_IS_CANCELLABLE (cancellable));
 
-  dialog = _ptyxis_close_dialog_new (parent, tabs);
+  dialog = _ptyxis_close_dialog_new (parent, surfaces, is_window);
   task = g_task_new (dialog, cancellable, callback, user_data);
   g_task_set_source_tag (task, _ptyxis_close_dialog_run_async);
 
-  if (tabs == NULL || tabs->len == 0)
+  if (surfaces == NULL || surfaces->len == 0)
     {
       g_task_return_boolean (task, TRUE);
       return;

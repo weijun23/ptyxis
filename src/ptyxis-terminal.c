@@ -33,7 +33,6 @@
 #include "ptyxis-application.h"
 #include "ptyxis-custom-link.h"
 #include "ptyxis-shortcuts.h"
-#include "ptyxis-tab.h"
 #include "ptyxis-terminal.h"
 #include "ptyxis-terminal-surface.h"
 #include "ptyxis-util.h"
@@ -192,17 +191,16 @@ ptyxis_terminal_toast (PtyxisTerminal *self,
 static gboolean
 ptyxis_terminal_is_active (PtyxisTerminal *self)
 {
-  PtyxisTerminal *active_terminal = NULL;
   PtyxisWindow *window;
-  PtyxisTab *active_tab;
+  PtyxisTerminalSurface *active_surface;
 
   g_assert (PTYXIS_IS_TERMINAL (self));
 
   if ((window = PTYXIS_WINDOW (gtk_widget_get_ancestor (GTK_WIDGET (self), PTYXIS_TYPE_WINDOW))) &&
-      (active_tab = ptyxis_window_get_active_tab (window)))
-    active_terminal = ptyxis_tab_get_terminal (active_tab);
+      (active_surface = ptyxis_window_get_active_surface (window)))
+    return ptyxis_terminal_surface_get_terminal (active_surface) == self;
 
-  return active_terminal == self;
+  return FALSE;
 }
 
 static void
@@ -296,7 +294,6 @@ ptyxis_terminal_setup_context_menu (VteTerminal           *terminal,
 
   ptyxis_terminal_update_url_actions (self, x, y);
   gtk_popover_set_pointing_to (self->popover, &(GdkRectangle) {x, y, 1, 1});
-
   if (gtk_widget_get_direction (GTK_WIDGET (self)) == GTK_TEXT_DIR_RTL)
     gtk_widget_set_halign (GTK_WIDGET (self->popover), GTK_ALIGN_END);
   else
@@ -538,16 +535,14 @@ open_link_action (GtkWidget  *widget,
                   GVariant   *param)
 {
   PtyxisTerminal *self = (PtyxisTerminal *)widget;
-  PtyxisTab *tab;
 
   g_assert (PTYXIS_IS_TERMINAL (self));
 
   if (ptyxis_str_empty0 (self->url))
     return;
 
-  tab = PTYXIS_TAB (gtk_widget_get_ancestor (widget, PTYXIS_TYPE_TAB));
-
-  ptyxis_tab_open_uri (tab, self->url);
+  if (self->surface != NULL)
+    ptyxis_terminal_surface_open_uri (self->surface, self->url);
 }
 
 static void
@@ -1564,6 +1559,18 @@ ptyxis_terminal_class_init (PtyxisTerminalClass *klass)
 }
 
 static void
+ptyxis_terminal_popover_shown_cb (GtkWidget      *popover,
+                                  PtyxisTerminal *self)
+{
+  GtkWidget *window;
+
+  window = gtk_widget_get_ancestor (GTK_WIDGET (self), PTYXIS_TYPE_WINDOW);
+
+  if (window != NULL)
+    ptyxis_window_configure_popover (PTYXIS_WINDOW (window), popover);
+}
+
+static void
 ptyxis_terminal_init (PtyxisTerminal *self)
 {
   g_autoptr(GdkContentFormats) formats = NULL;
@@ -1574,6 +1581,9 @@ ptyxis_terminal_init (PtyxisTerminal *self)
   g_set_object (&self->shortcuts, shortcuts);
 
   gtk_widget_init_template (GTK_WIDGET (self));
+
+  g_signal_connect (self->popover, "show",
+                    G_CALLBACK (ptyxis_terminal_popover_shown_cb), self);
 
   g_signal_connect_object (shortcuts,
                            "notify",
@@ -1628,6 +1638,14 @@ ptyxis_terminal_init (PtyxisTerminal *self)
   ptyxis_terminal_update_hover_uri (self);
 }
 
+PtyxisPalette *
+ptyxis_terminal_get_palette (PtyxisTerminal *self)
+{
+  g_return_val_if_fail (PTYXIS_IS_TERMINAL (self), NULL);
+
+  return self->palette;
+}
+
 PtyxisTerminalSurface *
 ptyxis_terminal_get_surface (PtyxisTerminal *self)
 {
@@ -1643,14 +1661,6 @@ ptyxis_terminal_set_surface (PtyxisTerminal        *self,
   g_return_if_fail (PTYXIS_IS_TERMINAL (self));
 
   self->surface = surface;
-}
-
-PtyxisPalette *
-ptyxis_terminal_get_palette (PtyxisTerminal *self)
-{
-  g_return_val_if_fail (PTYXIS_IS_TERMINAL (self), NULL);
-
-  return self->palette;
 }
 
 void

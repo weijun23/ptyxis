@@ -29,7 +29,6 @@
 
 #include <glib/gi18n.h>
 
-#include "ptyxis-tab.h"
 #include "ptyxis-terminal.h"
 #include "ptyxis-terminal-surface.h"
 #include "ptyxis-window.h"
@@ -62,8 +61,8 @@ static inline void
 ptyxis_notify_show_notification (PtyxisNotify *notify,
                                  const char   *cmdline)
 {
+  PtyxisWindowClass *klass;
   GtkRoot *window;
-  PtyxisTab *active_tab;
 
   g_assert (notify != NULL);
   g_assert (GTK_IS_WIDGET (notify->widget));
@@ -75,10 +74,9 @@ ptyxis_notify_show_notification (PtyxisNotify *notify,
 
   if (gtk_window_is_active (GTK_WINDOW (window)))
     {
-      active_tab = ptyxis_window_get_active_tab (PTYXIS_WINDOW (window));
+      PtyxisTerminalSurface *active = ptyxis_window_get_active_surface (PTYXIS_WINDOW (window));
 
-      if (active_tab != NULL &&
-          ptyxis_tab_get_surface (active_tab) == notify->surface)
+      if (active == notify->surface)
         return;
     }
   else
@@ -108,10 +106,10 @@ ptyxis_notify_show_notification (PtyxisNotify *notify,
                                        notify->uuid, notification);
     }
 
-  active_tab = PTYXIS_TAB (gtk_widget_get_ancestor (notify->widget, PTYXIS_TYPE_TAB));
+  klass = PTYXIS_WINDOW_GET_CLASS (window);
 
-  if (active_tab != NULL)
-    ptyxis_tab_set_needs_attention (active_tab, TRUE);
+  if (klass->surface_needs_attention != NULL)
+    klass->surface_needs_attention (PTYXIS_WINDOW (window), notify->surface);
 }
 
 static inline void

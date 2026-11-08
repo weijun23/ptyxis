@@ -25,18 +25,19 @@
 
 #define DEFAULT_TIMEOUT_SECONDS 5
 
-typedef struct _PtyxisParkedTab
+typedef struct _PtyxisParkedWidget
 {
-  GList             link;
-  PtyxisParkingLot *lot;
-  PtyxisTab        *tab;
-  guint             source_id;
-} PtyxisParkedTab;
+  GList                 link;
+  PtyxisParkingLot     *lot;
+  GtkWidget            *widget;
+  PtyxisTerminalSurface *surface;
+  guint                 source_id;
+} PtyxisParkedWidget;
 
 struct _PtyxisParkingLot
 {
   GObject parent_instance;
-  GQueue  tabs;
+  GQueue  widgets;
   guint   timeout;
 };
 
@@ -51,29 +52,31 @@ G_DEFINE_FINAL_TYPE (PtyxisParkingLot, ptyxis_parking_lot, G_TYPE_OBJECT)
 static GParamSpec *properties [N_PROPS];
 
 static void
-ptyxis_parking_lot_remove (PtyxisParkingLot *self,
-                           PtyxisParkedTab  *parked,
-                           gboolean          force_quit)
+ptyxis_parking_lot_remove (PtyxisParkingLot   *self,
+                           PtyxisParkedWidget *parked,
+                           gboolean            force_quit)
 {
-  g_autoptr(PtyxisTab) tab = NULL;
+  g_autoptr(GtkWidget) widget = NULL;
+  PtyxisTerminalSurface *surface;
 
   g_assert (PTYXIS_IS_PARKING_LOT (self));
   g_assert (parked != NULL);
 
-  tab = g_steal_pointer (&parked->tab);
+  widget = g_steal_pointer (&parked->widget);
+  surface = g_steal_pointer (&parked->surface);
 
   g_clear_handle_id (&parked->source_id, g_source_remove);
-  g_queue_unlink (&self->tabs, &parked->link);
+  g_queue_unlink (&self->widgets, &parked->link);
   parked->lot = NULL;
   g_clear_pointer (&parked, g_free);
 
-  if (tab != NULL)
+  if (widget != NULL)
     {
-      g_autofree char *title = ptyxis_tab_dup_title (tab);
-      g_debug ("Removing tab \"%s\" from parking lot", title);
+      g_autofree char *title = ptyxis_terminal_surface_dup_title (surface);
+      g_debug ("Removing widget \"%s\" from parking lot", title);
 
       if (force_quit)
-        ptyxis_tab_force_quit (tab);
+        ptyxis_terminal_surface_force_quit (surface);
     }
 }
 
@@ -82,8 +85,8 @@ ptyxis_parking_lot_dispose (GObject *object)
 {
   PtyxisParkingLot *self = (PtyxisParkingLot *)object;
 
-  while (self->tabs.head != NULL)
-    ptyxis_parking_lot_remove (self, self->tabs.head->data, TRUE);
+  while (self->widgets.head != NULL)
+    ptyxis_parking_lot_remove (self, self->widgets.head->data, TRUE);
 
   G_OBJECT_CLASS (ptyxis_parking_lot_parent_class)->dispose (object);
 }
@@ -181,11 +184,11 @@ ptyxis_parking_lot_set_timeout (PtyxisParkingLot *self,
 static gboolean
 ptyxis_parking_lot_source_func (gpointer data)
 {
-  PtyxisParkedTab *parked = data;
+  PtyxisParkedWidget *parked = data;
 
   g_assert (parked != NULL);
   g_assert (PTYXIS_IS_PARKING_LOT (parked->lot));
-  g_assert (PTYXIS_IS_TAB (parked->tab));
+  g_assert (GTK_IS_WIDGET (parked->widget));
   g_assert (parked->source_id != 0);
 
   ptyxis_parking_lot_remove (parked->lot, parked, TRUE);
@@ -194,50 +197,53 @@ ptyxis_parking_lot_source_func (gpointer data)
 }
 
 void
-ptyxis_parking_lot_push (PtyxisParkingLot *self,
-                         PtyxisTab        *tab)
+ptyxis_parking_lot_push (PtyxisParkingLot      *self,
+                         GtkWidget             *widget,
+                         PtyxisTerminalSurface *surface)
 {
-  PtyxisParkedTab *parked;
+  PtyxisParkedWidget *parked;
   g_autofree char *title = NULL;
 
   g_return_if_fail (PTYXIS_IS_PARKING_LOT (self));
-  g_return_if_fail (PTYXIS_IS_TAB (tab));
+  g_return_if_fail (GTK_IS_WIDGET (widget));
+  g_return_if_fail (PTYXIS_IS_TERMINAL_SURFACE (surface));
 
-  title = ptyxis_tab_dup_title (tab);
-  g_debug ("Adding tab \"%s\" to parking lot", title);
+  title = ptyxis_terminal_surface_dup_title (surface);
+  g_debug ("Adding widget \"%s\" to parking lot", title);
 
-  parked = g_new0 (PtyxisParkedTab, 1);
+  parked = g_new0 (PtyxisParkedWidget, 1);
   parked->link.data = parked;
-  parked->tab = g_object_ref (tab);
+  parked->widget = g_object_ref (widget);
+  parked->surface = surface;
   parked->lot = self;
   parked->source_id = g_timeout_add_seconds_full (G_PRIORITY_LOW,
                                                   self->timeout,
                                                   ptyxis_parking_lot_source_func,
                                                   parked, NULL);
 
-  g_queue_push_tail_link (&self->tabs, &parked->link);
+  g_queue_push_tail_link (&self->widgets, &parked->link);
 }
 
 /**
  * ptyxis_parking_lot_pop:
  * @self: a #PtyxisParkingLot
  *
- * Returns: (transfer full) (nullable): a #PtyxisTab or %NULL
+ * Returns: (transfer full) (nullable): a #GtkWidget or %NULL
  */
-PtyxisTab *
+GtkWidget *
 ptyxis_parking_lot_pop (PtyxisParkingLot *self)
 {
-  PtyxisParkedTab *parked;
-  PtyxisTab *ret = NULL;
+  PtyxisParkedWidget *parked;
+  GtkWidget *ret = NULL;
 
   g_return_val_if_fail (PTYXIS_IS_PARKING_LOT (self), NULL);
 
-  g_debug ("Request to pop tab from parking lot of %u tabs",
-           self->tabs.length);
+  g_debug ("Request to pop widget from parking lot of %u widgets",
+           self->widgets.length);
 
-  if ((parked = g_queue_peek_head (&self->tabs)))
+  if ((parked = g_queue_peek_head (&self->widgets)))
     {
-      ret = g_steal_pointer (&parked->tab);
+      ret = g_steal_pointer (&parked->widget);
       ptyxis_parking_lot_remove (self, parked, FALSE);
     }
 

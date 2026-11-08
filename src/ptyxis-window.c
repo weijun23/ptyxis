@@ -105,7 +105,9 @@ ptyxis_window_close_page_dialog_cb (GObject      *object,
       return;
     }
 
-  ptyxis_parking_lot_push (GET_PRIV (self)->parking_lot, tab);
+  ptyxis_parking_lot_push (GET_PRIV (self)->parking_lot,
+                          GTK_WIDGET (tab),
+                          ptyxis_tab_get_surface (tab));
 
   /* Ignore snapshot because libadwaita will try to snapshot this when
    * calling adw_tab_view_close_page_finish(). This just skips past it
@@ -125,7 +127,6 @@ ptyxis_window_close_page_cb (PtyxisWindow *self,
                              AdwTabPage   *tab_page,
                              AdwTabView   *tab_view)
 {
-  g_autoptr(GPtrArray) tabs = NULL;
   PtyxisSettings *settings;
   PtyxisTab *tab;
 
@@ -145,19 +146,24 @@ ptyxis_window_close_page_cb (PtyxisWindow *self,
   if (!ptyxis_tab_is_running (tab, NULL) ||
       !ptyxis_settings_get_prompt_on_close (settings))
     {
-      ptyxis_parking_lot_push (GET_PRIV (self)->parking_lot, tab);
+      ptyxis_parking_lot_push (GET_PRIV (self)->parking_lot,
+                              GTK_WIDGET (tab),
+                              ptyxis_tab_get_surface (tab));
       gtk_window_set_default_size (GTK_WINDOW (self), -1, -1);
       return GDK_EVENT_PROPAGATE;
     }
 
-  tabs = g_ptr_array_new_with_free_func (g_object_unref);
-  g_ptr_array_add (tabs, g_object_ref (tab));
+  {
+    g_autoptr(GPtrArray) surfaces = g_ptr_array_new_with_free_func (g_object_unref);
+    g_ptr_array_add (surfaces, g_object_ref (ptyxis_tab_get_surface (tab)));
 
-  _ptyxis_close_dialog_run_async (GTK_WINDOW (self),
-                                  tabs,
-                                  NULL,
-                                  ptyxis_window_close_page_dialog_cb,
-                                  g_object_ref (tab));
+    _ptyxis_close_dialog_run_async (GTK_WINDOW (self),
+                                    surfaces,
+                                    FALSE,
+                                    NULL,
+                                    ptyxis_window_close_page_dialog_cb,
+                                    g_object_ref (tab));
+  }
 
   return GDK_EVENT_STOP;
 }
@@ -1155,16 +1161,16 @@ ptyxis_window_set_title_action (GtkWidget  *widget,
                                 GVariant   *param)
 {
   PtyxisWindow *self = (PtyxisWindow *)widget;
+  PtyxisTerminalSurface *surface;
   AdwDialog *dialog;
-  PtyxisTab *active_tab;
 
   g_assert (PTYXIS_IS_WINDOW (self));
 
-  if (!(active_tab = ptyxis_window_get_active_tab (self)))
+  if (!(surface = ptyxis_window_get_active_surface (self)))
     return;
 
   dialog = g_object_new (PTYXIS_TYPE_TITLE_DIALOG,
-                         "tab", active_tab,
+                         "surface", surface,
                          "title", _("Set Title"),
                          NULL);
 
@@ -1178,16 +1184,16 @@ ptyxis_window_set_profile_action (GtkWidget  *widget,
                                   GVariant   *param)
 {
   PtyxisWindow *self = (PtyxisWindow *)widget;
+  PtyxisTerminalSurface *surface;
   AdwDialog *dialog;
-  PtyxisTab *active_tab;
 
   g_assert (PTYXIS_IS_WINDOW (self));
 
-  if (!(active_tab = ptyxis_window_get_active_tab (self)))
+  if (!(surface = ptyxis_window_get_active_surface (self)))
     return;
 
   dialog = g_object_new (PTYXIS_TYPE_PROFILE_DIALOG,
-                         "tab", active_tab,
+                         "surface", surface,
                          NULL);
 
   adw_dialog_set_presentation_mode (dialog, ADW_DIALOG_FLOATING);
@@ -1213,12 +1219,14 @@ ptyxis_window_undo_close_tab_action (GtkWidget  *widget,
                                      GVariant   *param)
 {
   PtyxisWindow *self = (PtyxisWindow *)widget;
-  g_autoptr(PtyxisTab) tab = NULL;
+  g_autoptr(GtkWidget) child = NULL;
 
   g_assert (PTYXIS_IS_WINDOW (self));
 
-  if ((tab = ptyxis_parking_lot_pop (GET_PRIV (self)->parking_lot)))
+  if ((child = ptyxis_parking_lot_pop (GET_PRIV (self)->parking_lot)))
     {
+      PtyxisTab *tab = PTYXIS_TAB (child);
+
       if (!ptyxis_tab_is_running (tab, NULL))
         ptyxis_tab_show_banner (tab);
       ptyxis_window_add_tab (self, tab);
@@ -1334,7 +1342,7 @@ static gboolean
 ptyxis_window_close_request (GtkWindow *window)
 {
   PtyxisWindow *self = (PtyxisWindow *)window;
-  g_autoptr(GPtrArray) tabs = NULL;
+  g_autoptr(GPtrArray) surfaces = NULL;
   PtyxisSettings *settings;
   guint n_pages;
 
@@ -1350,7 +1358,7 @@ ptyxis_window_close_request (GtkWindow *window)
   if (!ptyxis_settings_get_prompt_on_close (settings))
     return GDK_EVENT_PROPAGATE;
 
-  tabs = g_ptr_array_new_with_free_func (g_object_unref);
+  surfaces = g_ptr_array_new_with_free_func (g_object_unref);
   n_pages = adw_tab_view_get_n_pages (GET_PRIV (self)->tab_view);
 
   GET_PRIV (self)->in_close_request = TRUE;
@@ -1361,21 +1369,22 @@ ptyxis_window_close_request (GtkWindow *window)
       PtyxisTab *tab = PTYXIS_TAB (adw_tab_page_get_child (page));
 
       if (ptyxis_tab_is_running (tab, NULL))
-        g_ptr_array_add (tabs, g_object_ref (tab));
+        g_ptr_array_add (surfaces, g_object_ref (ptyxis_tab_get_surface (tab)));
       else
         adw_tab_view_close_page (GET_PRIV (self)->tab_view, page);
     }
 
-  if (tabs->len > 0)
+  if (surfaces->len > 0)
     _ptyxis_close_dialog_run_async (GTK_WINDOW (self),
-                                    tabs,
+                                    surfaces,
+                                    TRUE,
                                     NULL,
                                     ptyxis_window_close_request_cb,
                                     g_object_ref (self));
   else
     GET_PRIV (self)->in_close_request = FALSE;
 
-  return tabs->len > 0;
+  return surfaces->len > 0;
 }
 
 static void

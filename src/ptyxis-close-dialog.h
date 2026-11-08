@@ -26,7 +26,8 @@
 G_BEGIN_DECLS
 
 void     _ptyxis_close_dialog_run_async  (GtkWindow            *parent,
-                                          GPtrArray            *tabs,
+                                          GPtrArray            *surfaces,
+                                          gboolean              is_window,
                                           GCancellable         *cancellable,
                                           GAsyncReadyCallback   callback,
                                           gpointer              user_data);
