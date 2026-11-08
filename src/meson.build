@@ -41,6 +41,7 @@ ptyxis_sources = [
   'ptyxis-tab.c',
   'ptyxis-tab-monitor.c',
   'ptyxis-terminal.c',
+  'ptyxis-terminal-surface.c',
   'ptyxis-terminal-intent.c',
   'ptyxis-theme-selector.c',
   'ptyxis-title-dialog.c',
@@ -56,7 +57,7 @@ ptyxis_enum_headers = [
   'ptyxis-profile.h',
   'ptyxis-settings.h',
   'ptyxis-tab.h',
-  'ptyxis-tab-monitor.h',
+  'ptyxis-terminal-surface.h',
 ]
 
 ptyxis_sources += gnome.mkenums_simple('ptyxis-enums',

@@ -35,6 +35,7 @@
 #include "ptyxis-shortcuts.h"
 #include "ptyxis-tab.h"
 #include "ptyxis-terminal.h"
+#include "ptyxis-terminal-surface.h"
 #include "ptyxis-util.h"
 #include "ptyxis-window.h"
 
@@ -55,6 +56,7 @@ struct _PtyxisTerminal
 {
   VteTerminal        parent_instance;
 
+  PtyxisTerminalSurface *surface;
   PtyxisShortcuts    *shortcuts;
   PtyxisPalette      *palette;
   char               *url;
@@ -1624,6 +1626,23 @@ ptyxis_terminal_init (PtyxisTerminal *self)
 
   ptyxis_terminal_update_clipboard_actions (self);
   ptyxis_terminal_update_hover_uri (self);
+}
+
+PtyxisTerminalSurface *
+ptyxis_terminal_get_surface (PtyxisTerminal *self)
+{
+  g_return_val_if_fail (PTYXIS_IS_TERMINAL (self), NULL);
+
+  return self->surface;
+}
+
+void
+ptyxis_terminal_set_surface (PtyxisTerminal        *self,
+                             PtyxisTerminalSurface *surface)
+{
+  g_return_if_fail (PTYXIS_IS_TERMINAL (self));
+
+  self->surface = surface;
 }
 
 PtyxisPalette *
