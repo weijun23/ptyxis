@@ -90,6 +90,7 @@ void                ptyxis_tab_apply_profile                      (PtyxisTab    
                                                                    PtyxisProfile        *new_profile);
 PtyxisIpcProcess   *ptyxis_tab_get_process                        (PtyxisTab            *self);
 const char         *ptyxis_tab_get_uuid                           (PtyxisTab            *self);
+void                ptyxis_tab_withdraw_notification              (PtyxisTab            *self);
 const char         *ptyxis_tab_get_command_line                   (PtyxisTab            *self);
 void                ptyxis_tab_set_command                        (PtyxisTab            *self,
                                                                    const char * const   *command);

@@ -180,6 +180,11 @@ ptyxis_window_close_page_cb (PtyxisWindow *self,
   tab = PTYXIS_TAB (adw_tab_page_get_child (tab_page));
   settings = ptyxis_application_get_settings (PTYXIS_APPLICATION_DEFAULT);
 
+  /* Closing (or parking) the tab must drop its GNotification, otherwise
+   * GNOME Shell keeps a dock badge after the tab is gone.
+   */
+  ptyxis_tab_withdraw_notification (tab);
+
   /* If we are disposed, allow closing immediately */
   if (self->disposed)
     return GDK_EVENT_PROPAGATE;
@@ -1091,6 +1096,27 @@ ptyxis_window_toggle_fullscreen (GtkWidget  *widget,
 }
 
 static void
+ptyxis_window_withdraw_tab_notifications (PtyxisWindow *self)
+{
+  guint n_pages;
+
+  g_assert (PTYXIS_IS_WINDOW (self));
+
+  if (self->tab_view == NULL)
+    return;
+
+  n_pages = adw_tab_view_get_n_pages (self->tab_view);
+  for (guint i = 0; i < n_pages; i++)
+    {
+      AdwTabPage *page = adw_tab_view_get_nth_page (self->tab_view, i);
+      GtkWidget *child = adw_tab_page_get_child (page);
+
+      if (PTYXIS_IS_TAB (child))
+        ptyxis_tab_withdraw_notification (PTYXIS_TAB (child));
+    }
+}
+
+static void
 ptyxis_window_notify_is_active_cb (PtyxisWindow *self,
                                    GParamSpec   *pspec)
 {
@@ -1106,6 +1132,7 @@ ptyxis_window_notify_is_active_cb (PtyxisWindow *self,
           gdk_x11_surface_set_urgency_hint (surface, FALSE);
       }
 #endif
+      ptyxis_window_withdraw_tab_notifications (self);
     }
 }
 

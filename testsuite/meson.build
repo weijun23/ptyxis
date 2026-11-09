@@ -33,3 +33,8 @@ foreach test, params: testsuite
     test(test, test_exe, env: test_env)
   endif
 endforeach
+
+# Manual GNOME-session reproduction of the dock-badge leak. Do not register
+# this with `test()`: GNOME OS CI runs `meson test` under headless mutter
+# (no org.gtk.Notifications), which fails the job.
+#   python3 testsuite/test-notification-badge.py

@@ -676,8 +676,7 @@ ptyxis_tab_notify_contains_focus_cb (PtyxisTab               *self,
   if (gtk_event_controller_focus_contains_focus (focus))
     {
       ptyxis_tab_set_needs_attention (self, FALSE);
-      g_application_withdraw_notification (G_APPLICATION (PTYXIS_APPLICATION_DEFAULT),
-                                           self->uuid);
+      ptyxis_tab_withdraw_notification (self);
     }
 }
 
@@ -1994,6 +1993,16 @@ ptyxis_tab_get_uuid (PtyxisTab *self)
   g_return_val_if_fail (PTYXIS_IS_TAB (self), NULL);
 
   return self->uuid;
+}
+
+void
+ptyxis_tab_withdraw_notification (PtyxisTab *self)
+{
+  g_return_if_fail (PTYXIS_IS_TAB (self));
+
+  if (self->uuid != NULL && PTYXIS_APPLICATION_DEFAULT != NULL)
+    g_application_withdraw_notification (G_APPLICATION (PTYXIS_APPLICATION_DEFAULT),
+                                         self->uuid);
 }
 
 PtyxisIpcContainer *

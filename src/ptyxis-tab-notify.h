@@ -197,10 +197,17 @@ ptyxis_tab_notify_init (PtyxisTabNotify *notify,
 static inline void
 ptyxis_tab_notify_destroy (PtyxisTabNotify *notify)
 {
-  PtyxisTerminal *terminal = ptyxis_tab_get_terminal (notify->tab);
+  PtyxisTerminal *terminal;
 
   if (notify->tab == NULL)
     return;
+
+  /* GNOME Shell persists GNotifications after the tab is gone.
+   * Withdraw now so Ubuntu Dock does not keep a stale badge.
+   */
+  ptyxis_tab_withdraw_notification (notify->tab);
+
+  terminal = ptyxis_tab_get_terminal (notify->tab);
 
   g_clear_handle_id (&notify->contents_changed_source, g_source_remove);
   g_clear_handle_id (&notify->shell_preexec_source, g_source_remove);
