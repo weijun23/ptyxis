@@ -197,7 +197,7 @@ ptyxis_terminal_intent_handle_launch_command (FdoTerminal1          *intent,
                                               g_error_new_literal (G_DBUS_ERROR,
                                                                    G_DBUS_ERROR_INVALID_ARGS,
                                                                    "Failed to locate session container"));
-      return TRUE;
+      return G_DBUS_METHOD_INVOCATION_HANDLED;
     }
 
   argvs = g_ptr_array_new_with_free_func ((GDestroyNotify) g_strfreev);
@@ -208,14 +208,14 @@ ptyxis_terminal_intent_handle_launch_command (FdoTerminal1          *intent,
     {
       g_dbus_method_invocation_return_gerror (g_steal_pointer (&invocation),
                                               g_steal_pointer (&error));
-      return FALSE;
+      return G_DBUS_METHOD_INVOCATION_HANDLED;
     }
 
   if (!unpack_desktop_entry (desktop_entry_path, &name, &path, &error))
     {
       g_dbus_method_invocation_return_gerror (g_steal_pointer (&invocation),
                                               g_steal_pointer (&error));
-      return FALSE;
+      return G_DBUS_METHOD_INVOCATION_HANDLED;
     }
 
   g_variant_lookup (options, "keep-terminal-open", "b", &keep_terminal_open);
@@ -281,7 +281,7 @@ ptyxis_terminal_intent_handle_launch_command (FdoTerminal1          *intent,
 
   fdo_terminal1_complete_launch_command (intent, g_steal_pointer (&invocation));
 
-  return TRUE;
+  return G_DBUS_METHOD_INVOCATION_HANDLED;
 }
 
 static void
