@@ -217,9 +217,29 @@ ptyxis_agent_impl_add_container (PtyxisAgentImpl    *self,
 {
   g_autofree char *object_path = NULL;
   g_autofree char *guid = NULL;
+  const char *id;
 
   g_return_if_fail (PTYXIS_IS_AGENT_IMPL (self));
   g_return_if_fail (PTYXIS_IPC_IS_CONTAINER (container));
+
+  /* Containers are matched by identifier across every provider (see
+   * ptyxis_agent_impl_provider_removed_cb()), so two providers advertising
+   * the same identifier would remove each other's containers. That can
+   * happen when a runtime is aliased to another, such as the podman-docker
+   * shim providing /usr/bin/docker.
+   */
+  id = ptyxis_ipc_container_get_id (container);
+
+  for (guint i = 0; i < self->containers->len; i++)
+    {
+      PtyxisIpcContainer *element = g_ptr_array_index (self->containers, i);
+
+      if (g_strcmp0 (id, ptyxis_ipc_container_get_id (element)) == 0)
+        {
+          g_warning ("Container \"%s\" is already registered, ignoring", id);
+          return;
+        }
+    }
 
   guid = g_dbus_generate_guid ();
   object_path = g_strdup_printf ("/org/gnome/Ptyxis/Containers/%s", guid);

@@ -25,6 +25,8 @@ ptyxis_agent_sources = [
     'ptyxis-agent-util.c',
     'ptyxis-container-provider.c',
     'ptyxis-distrobox-container.c',
+    'ptyxis-docker-container.c',
+    'ptyxis-docker-provider.c',
     'ptyxis-podman-container.c',
     'ptyxis-podman-provider.c',
     'ptyxis-process-impl.c',

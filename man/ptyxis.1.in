@@ -28,8 +28,15 @@ ptyxis \- a container-oriented terminal
 .B ptyxis
 is a container-oriented terminal, designed for the GNOME desktop.
 It provides tight integration with podman, toolbox, distrobox,
-and jhbuild to simplify container-based development and system
-management.
+docker, and jhbuild to simplify container-based development and
+system management.
+.br
+Docker containers are only listed when the
+.B docker
+command can be run without elevated privileges, such as when the
+user belongs to the
+.B docker
+group or is using rootless Docker.
 .br
 
 .TP

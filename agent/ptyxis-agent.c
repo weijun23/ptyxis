@@ -36,6 +36,7 @@
 
 #include "ptyxis-agent-impl.h"
 #include "ptyxis-distrobox-container.h"
+#include "ptyxis-docker-provider.h"
 #include "ptyxis-podman-provider.h"
 #include "ptyxis-session-container.h"
 #include "ptyxis-toolbox-container.h"
@@ -70,6 +71,7 @@ ptyxis_agent_init (PtyxisAgent  *agent,
 {
   g_autoptr(PtyxisSessionContainer) session = NULL;
   g_autoptr(PtyxisContainerProvider) podman = NULL;
+  g_autoptr(PtyxisContainerProvider) docker = NULL;
   g_autoptr(GError) local_error = NULL;
   g_autoptr(GFile) jhbuildrc = NULL;
 
@@ -158,6 +160,16 @@ ptyxis_agent_init (PtyxisAgent  *agent,
     }
 
   ptyxis_agent_impl_add_provider (agent->impl, podman);
+
+  docker = ptyxis_docker_provider_new ();
+
+  /* Wait for the first listing, like podman does, so containers are known
+   * before the UI asks for them. The deadline is only reached when docker does
+   * not answer at all.
+   */
+  ptyxis_docker_provider_update_sync (PTYXIS_DOCKER_PROVIDER (docker), 3000);
+
+  ptyxis_agent_impl_add_provider (agent->impl, docker);
 
   g_dbus_connection_start_message_processing (agent->bus);
 

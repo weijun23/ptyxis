@@ -9,8 +9,8 @@
 
 **A modern terminal emulator built for the container era.**
 _Seamlessly navigate between your host system and local containers like Podman,
-Toolbox, and Distrobox with intelligent detection and a beautiful, responsive
-GNOME interface._
+Toolbox, Distrobox, and Docker with intelligent detection and a beautiful,
+responsive GNOME interface._
 
 ![Ptyxis Screenshot - Tab Overview](https://gitlab.gnome.org/chergert/ptyxis/-/raw/main/data/screenshots/tab-overview.png)
 _Fig 1: Ptyxis tab overview for managing multiple terminal sessions._
@@ -35,8 +35,8 @@ under `app.devsuite.Ptyxis` for its stable Flatpak release) isn't just another
 terminal emulator—it's engineered from the ground up for modern development
 workflows within the GNOME desktop, where local containers are first-class
 citizens. It simplifies and enhances your interaction with tools like Podman,
-Toolbox, and Distrobox, making them a natural extension of your terminal
-experience. Ptyxis is the default terminal in Fedora Workstation,
+Toolbox, Distrobox, and Docker, making them a natural extension of your
+terminal experience. Ptyxis is the default terminal in Fedora Workstation,
 Red Hat Enterprise Linux, and Ubuntu, highlighting its robust design
 and performance.
 
@@ -44,7 +44,7 @@ and performance.
 
 - **First-Class Container Integration**: Automatic discovery, direct spawning,
   and context preservation (active container, CWD) for Podman, Toolbox,
-  Distrobox, and JHBuild.
+  Distrobox, Docker, and JHBuild.
 - **Modern GNOME Interface**: Built with GTK 4 and libadwaita for a native,
   responsive, and accessible user experience, adhering to GNOME HIG.
 - **Dynamic Theming & Customization**: Extensive built-in color palettes that
@@ -245,8 +245,8 @@ A distinct helper process, typically running on the host system (even when the
 Ptyxis UI is a Flatpak). It handles:
 
 - Creating and managing PTYs (pseudo-terminals).
-- Direct interaction with container runtimes (Podman, Toolbox, etc.) for
-  discovery and spawning processes within containers.
+- Direct interaction with container runtimes (Podman, Docker, Toolbox, etc.)
+  for discovery and spawning processes within containers.
 - Monitoring host processes and retrieving system info (shell, OS, proxies).
 - D-Bus communication with the UI over a `socketpair()`.
 
@@ -263,11 +263,13 @@ development environments.
 ### Technical Details
 
 1. **Discovery:** `ptyxis-agent` queries the host for containers (e.g.,
-    `podman ps --all --format=json`) and monitors system files for dynamic
-    updates to the container list in the UI.
+    `podman ps --all --format=json`, `docker ps` followed by
+    `docker container inspect`) and watches for changes, through system files
+    for Podman and through `docker events` for Docker, so the container list in
+    the UI stays current.
 2. **Spawning:** The agent constructs and executes CLI commands for the target
-    runtime (e.g., `podman exec -it ...`, `toolbox enter ...`,
-    `distrobox enter ...`). It manages PTY setup and I/O.
+    runtime (e.g., `podman exec -it ...`, `docker exec -it ...`,
+    `toolbox enter ...`, `distrobox enter ...`). It manages PTY setup and I/O.
 3. **Context Management:**
     - Active container identified by VTE termprops (e.g., `vte.container.name`).
     - CWD and select environment variables can be propagated into containers.
@@ -300,8 +302,27 @@ development environments.
   fi
   ```
 
-- **Docker:** Direct, dedicated support for the Docker daemon is **not
-  currently implemented**. Users can run `docker` CLI commands normally.
+- **Docker:** Supported. Containers are discovered with
+  `docker ps` plus `docker container inspect`, changes are picked up from
+  `docker events`, and tabs are opened with `docker exec`. Distrobox containers
+  created with the Docker backend are entered through `distrobox enter`.
+
+  Ptyxis never talks to `/run/docker.sock` itself, it only runs the `docker`
+  CLI, so **you must be able to run `docker` without `sudo`**. On a standard
+  rootful installation that means being a member of the `docker` group:
+
+  ```bash
+  sudo usermod -aG docker "$USER"   # log out and back in afterwards
+  ```
+
+  Rootless Docker, a remote `DOCKER_HOST`, and Docker contexts work as well,
+  since the CLI resolves them. If Docker cannot be reached, the containers
+  simply do not appear and Ptyxis behaves as if Docker were not installed.
+
+  Note that Docker assigns a new identifier whenever a container is recreated,
+  which Compose and image-update tools do routinely. A profile pinned to such a
+  container with **Default Container** will lose that association when the
+  container is replaced.
 - **systemd-nspawn:** Contributions for enhanced integration are welcome.
 
 ### Note on Container Security
@@ -408,7 +429,22 @@ referencing the design discussion/specification.
     providing Ptyxis/GTK/VTE versions, OS, GPU/driver, scaling factor,
     and steps to reproduce.
 
-- **Container Detection for `toolbox`, `podman`, `distrobox`:**
+- **Docker Containers Don't Appear:**
+  Ptyxis runs the `docker` CLI as your user, it never accesses the daemon
+  socket directly. Check that it works without `sudo`:
+
+  ```bash
+  docker ps
+  ```
+
+  A "permission denied while trying to connect to the Docker daemon socket"
+  error means your user cannot reach the daemon; add yourself to the `docker`
+  group and start a new session. Note that Ptyxis deliberately ignores a
+  `docker` command that is really Podman in disguise, such as the one from the
+  `podman-docker` package, because those containers are already listed by the
+  Podman provider.
+
+- **Container Detection for `toolbox`, `podman`, `distrobox`, `docker`:**
   Reliable automatic container detection relies on these tools emitting VTE
   escape sequences (like OSC 777).
   - Use **recent versions** of container tools.

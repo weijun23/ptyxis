@@ -1,0 +1,125 @@
+[
+  {
+    "Id": "f0d4ddcece301024bfc912c859458330d98e6b5aa7f947b456f96d2bf7e91136",
+    "Created": "2026-08-08T09:02:00.123456789Z",
+    "Path": "/entry_point.sh",
+    "Name": "/chaotic-builder",
+    "Driver": "overlayfs",
+    "Platform": "linux",
+    "State": {
+      "Status": "running",
+      "Running": true,
+      "Paused": false,
+      "Restarting": false,
+      "Pid": 12345,
+      "ExitCode": 0
+    },
+    "Config": {
+      "Hostname": "f0d4ddcece30",
+      "User": "",
+      "Tty": false,
+      "Image": "registry.example.com/tools/manager:latest",
+      "WorkingDir": "/app",
+      "Labels": {
+        "com.docker.compose.config-hash": "c25bd9cb093026e622882c361936a64ff2a9400b5f1ef77ce7f8ab54a0bfd4f3",
+        "com.docker.compose.container-number": "1",
+        "com.docker.compose.project": "chaotic",
+        "com.docker.compose.service": "chaotic-builder",
+        "com.docker.compose.version": "5.1.4"
+      }
+    }
+  },
+  {
+    "Id": "0c7932d3f4b16a45e962830b6bb67d99d603c301d3beb1fa325365fae17d6992",
+    "Created": "2026-08-05T02:24:19.987654321Z",
+    "Name": "/watchtower",
+    "Platform": "linux",
+    "State": {
+      "Status": "running",
+      "Running": true,
+      "Paused": false,
+      "ExitCode": 0
+    },
+    "Config": {
+      "Hostname": "0c7932d3f4b1",
+      "User": "",
+      "Image": "example/watchtower:latest",
+      "WorkingDir": "",
+      "Labels": {
+        "com.centurylinklabs.watchtower": "true",
+        "com.centurylinklabs.watchtower.container-chain": "1f7c4e0652fae056bb6b1ec81440fb1cb0e5772dde56377484ef53e8868eaa25,c666baff6cd3aa14218aa057011564f8f20d2b3173c8500e3b64aa46f88710b5,cdf7616ea23dbcc5ca8c8f96b0106750be069a7d7a230ff4b4852995cf7078b3",
+        "org.opencontainers.image.licenses": "Apache-2.0"
+      }
+    }
+  },
+  {
+    "Id": "3b1e7a55c0d94f2a8e6b1c4d7f0a2e5b8c9d0e1f2a3b4c5d6e7f8091a2b3c4d5",
+    "Created": "2026-08-01T10:00:00.000000000Z",
+    "Name": "/no-labels-stopped",
+    "Platform": "linux",
+    "State": {
+      "Status": "exited",
+      "Running": false,
+      "Paused": false,
+      "ExitCode": 0
+    },
+    "Config": {
+      "Hostname": "3b1e7a55c0d9",
+      "User": "",
+      "Image": "alpine:latest",
+      "WorkingDir": "",
+      "Labels": null
+    }
+  },
+  {
+    "Id": "9e8d7c6b5a4938271605f4e3d2c1b0a998877665544332211ffeeddccbbaa9988",
+    "Created": "2026-07-20T18:30:00.000000000Z",
+    "Name": "/my-distrobox",
+    "Platform": "linux",
+    "State": {
+      "Status": "running",
+      "Running": true,
+      "Paused": false,
+      "ExitCode": 0
+    },
+    "Config": {
+      "Hostname": "9e8d7c6b5a49",
+      "User": "",
+      "Image": "docker.io/library/fedora:latest",
+      "WorkingDir": "/",
+      "Labels": {
+        "manager": "distrobox",
+        "com.github.containers.toolbox": "true"
+      }
+    }
+  },
+  {
+    "Created": "2026-07-19T12:00:00.000000000Z",
+    "Name": "/container-without-an-id",
+    "State": {
+      "Status": "running",
+      "Running": true
+    },
+    "Config": {
+      "Image": "alpine:latest",
+      "Labels": {}
+    }
+  },
+  {
+    "Id": "1122334455667788990011223344556677889900aabbccddeeff001122334455",
+    "Created": "2026-07-18T08:15:00.000000000Z",
+    "Platform": "linux",
+    "State": {
+      "Status": "exited",
+      "Running": false,
+      "ExitCode": 137
+    },
+    "Config": {
+      "Hostname": "112233445566",
+      "User": "",
+      "Image": "busybox:latest",
+      "WorkingDir": "",
+      "Labels": {}
+    }
+  }
+]
