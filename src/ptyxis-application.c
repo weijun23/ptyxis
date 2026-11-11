@@ -1820,6 +1820,7 @@ spawn_free (gpointer data)
   g_clear_object (&spawn->pty);
   g_clear_pointer (&spawn->last_working_directory_uri, g_free);
   g_clear_pointer (&spawn->argv, g_strfreev);
+  g_clear_pointer (&spawn->env, g_strfreev);
   g_free (spawn);
 }
 
