@@ -23,6 +23,7 @@
 #include <adwaita.h>
 
 #include "ptyxis-tab.h"
+#include "ptyxis-terminal.h"
 
 G_BEGIN_DECLS
 
@@ -30,7 +31,7 @@ G_BEGIN_DECLS
 
 G_DECLARE_FINAL_TYPE (PtyxisInspector, ptyxis_inspector, PTYXIS, INSPECTOR, AdwPreferencesWindow)
 
-PtyxisInspector *ptyxis_inspector_new     (PtyxisTab       *tab);
-PtyxisTab       *ptyxis_inspector_dup_tab (PtyxisInspector *self);
+PtyxisInspector *ptyxis_inspector_new              (PtyxisTab      *tab);
+PtyxisInspector *ptyxis_inspector_new_for_terminal  (PtyxisTerminal *terminal);
 
 G_END_DECLS

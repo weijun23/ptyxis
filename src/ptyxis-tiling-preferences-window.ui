@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <object class="AdwPreferencesGroup" id="tiling_group">
+    <property name="title" translatable="yes">Tiling</property>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Split Down</property>
+        <property name="shortcut-name">split-down</property>
+      </object>
+    </child>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Split Right</property>
+        <property name="shortcut-name">split-right</property>
+      </object>
+    </child>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Close Pane</property>
+        <property name="shortcut-name">close-pane</property>
+      </object>
+    </child>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Toggle Maximize Pane</property>
+        <property name="shortcut-name">toggle-maximize-pane</property>
+      </object>
+    </child>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Focus Pane Up</property>
+        <property name="shortcut-name">focus-pane-up</property>
+      </object>
+    </child>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Focus Pane Down</property>
+        <property name="shortcut-name">focus-pane-down</property>
+      </object>
+    </child>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Focus Pane Left</property>
+        <property name="shortcut-name">focus-pane-left</property>
+      </object>
+    </child>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Focus Pane Right</property>
+        <property name="shortcut-name">focus-pane-right</property>
+      </object>
+    </child>
+  </object>
+  <template class="PtyxisTilingPreferencesWindow" parent="PtyxisPreferencesWindow">
+  </template>
+</interface>

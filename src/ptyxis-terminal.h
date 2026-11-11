@@ -27,10 +27,15 @@
 
 G_BEGIN_DECLS
 
+typedef struct _PtyxisTerminalSurface PtyxisTerminalSurface;
+
 #define PTYXIS_TYPE_TERMINAL (ptyxis_terminal_get_type())
 
 G_DECLARE_FINAL_TYPE (PtyxisTerminal, ptyxis_terminal, PTYXIS, TERMINAL, VteTerminal)
 
+PtyxisTerminalSurface *ptyxis_terminal_get_surface            (PtyxisTerminal        *self);
+void           ptyxis_terminal_set_surface                   (PtyxisTerminal        *self,
+                                                              PtyxisTerminalSurface *surface);
 PtyxisPalette *ptyxis_terminal_get_palette                   (PtyxisTerminal *self);
 void           ptyxis_terminal_set_palette                   (PtyxisTerminal *self,
                                                               PtyxisPalette  *palette);

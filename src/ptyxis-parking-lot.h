@@ -21,7 +21,7 @@
 
 #pragma once
 
-#include "ptyxis-tab.h"
+#include "ptyxis-terminal-surface.h"
 
 G_BEGIN_DECLS
 
@@ -30,11 +30,12 @@ G_BEGIN_DECLS
 G_DECLARE_FINAL_TYPE (PtyxisParkingLot, ptyxis_parking_lot, PTYXIS, PARKING_LOT, GObject)
 
 PtyxisParkingLot *ptyxis_parking_lot_new         (void);
-guint             ptyxis_parking_lot_get_timeout (PtyxisParkingLot *self);
-void              ptyxis_parking_lot_set_timeout (PtyxisParkingLot *self,
-                                                  guint             timeout);
-void              ptyxis_parking_lot_push        (PtyxisParkingLot *self,
-                                                  PtyxisTab        *tab);
-PtyxisTab        *ptyxis_parking_lot_pop         (PtyxisParkingLot *self);
+guint             ptyxis_parking_lot_get_timeout (PtyxisParkingLot      *self);
+void              ptyxis_parking_lot_set_timeout (PtyxisParkingLot      *self,
+                                                  guint                  timeout);
+void              ptyxis_parking_lot_push        (PtyxisParkingLot      *self,
+                                                  GtkWidget             *widget,
+                                                  PtyxisTerminalSurface *surface);
+GtkWidget        *ptyxis_parking_lot_pop         (PtyxisParkingLot      *self);
 
 G_END_DECLS

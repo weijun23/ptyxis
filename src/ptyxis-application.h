@@ -26,6 +26,7 @@
 #include "ptyxis-profile.h"
 #include "ptyxis-settings.h"
 #include "ptyxis-shortcuts.h"
+#include "ptyxis-window.h"
 
 G_BEGIN_DECLS
 
@@ -43,6 +44,14 @@ PtyxisSettings     *ptyxis_application_get_settings               (PtyxisApplica
 PtyxisShortcuts    *ptyxis_application_get_shortcuts              (PtyxisApplication    *self);
 const char         *ptyxis_application_get_system_font_name       (PtyxisApplication    *self);
 gboolean            ptyxis_application_get_overlay_scrollbars     (PtyxisApplication    *self);
+PtyxisWindow       *ptyxis_application_new_window                (PtyxisApplication    *self);
+PtyxisWindow       *ptyxis_application_new_window_empty          (PtyxisApplication    *self);
+PtyxisWindow       *ptyxis_application_new_window_for_profile    (PtyxisApplication    *self,
+                                                                   PtyxisProfile        *profile);
+PtyxisWindow       *ptyxis_application_new_window_for_command    (PtyxisApplication    *self,
+                                                                   PtyxisProfile        *profile,
+                                                                   const char * const   *argv,
+                                                                   const char           *cwd_uri);
 gboolean            ptyxis_application_control_is_pressed         (PtyxisApplication    *self);
 void                ptyxis_application_add_profile                (PtyxisApplication    *self,
                                                                    PtyxisProfile        *profile);

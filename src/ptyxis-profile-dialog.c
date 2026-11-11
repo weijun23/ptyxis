@@ -24,22 +24,20 @@
 #include "ptyxis-application.h"
 #include "ptyxis-profile-dialog.h"
 #include "ptyxis-profile.h"
-#include "ptyxis-tab.h"
+#include "ptyxis-terminal-surface.h"
 
 struct _PtyxisProfileDialog
 {
-  AdwDialog     parent_instance;
+  AdwDialog              parent_instance;
 
-  /* Owned references */
-  PtyxisTab    *tab;
+  PtyxisTerminalSurface *surface; /* (owned) (not nullable) */
 
-  /* Template Widgets */
   AdwComboRow  *profile_combo;
 };
 
 enum {
   PROP_0,
-  PROP_TAB,
+  PROP_SURFACE,
   N_PROPS
 };
 
@@ -93,9 +91,8 @@ ptyxis_profile_dialog_apply_profile (PtyxisProfileDialog *self,
 {
   g_assert (PTYXIS_IS_PROFILE_DIALOG (self));
   g_assert (PTYXIS_IS_PROFILE (new_profile));
-  g_assert (PTYXIS_IS_TAB (self->tab));
 
-  ptyxis_tab_apply_profile (self->tab, new_profile);
+  ptyxis_terminal_surface_apply_profile (self->surface, new_profile);
 }
 
 static void
@@ -116,7 +113,7 @@ ptyxis_profile_dialog_constructed (GObject *object)
   profiles = ptyxis_application_list_profiles (app);
   adw_combo_row_set_model (self->profile_combo, profiles);
 
-  if ((current_profile = ptyxis_tab_get_profile (self->tab)))
+  if ((current_profile = ptyxis_terminal_surface_get_profile (self->surface)))
     {
       current_uuid = ptyxis_profile_get_uuid (current_profile);
       selected_index = find_profile_index (profiles, current_uuid);
@@ -137,7 +134,7 @@ ptyxis_profile_dialog_dispose (GObject *object)
 
   gtk_widget_dispose_template (GTK_WIDGET (self), PTYXIS_TYPE_PROFILE_DIALOG);
 
-  g_clear_object (&self->tab);
+  g_clear_object (&self->surface);
 
   G_OBJECT_CLASS (ptyxis_profile_dialog_parent_class)->dispose (object);
 }
@@ -152,8 +149,8 @@ ptyxis_profile_dialog_get_property (GObject    *object,
 
   switch (prop_id)
     {
-    case PROP_TAB:
-      g_value_set_object (value, self->tab);
+    case PROP_SURFACE:
+      g_value_set_object (value, self->surface);
       break;
 
     default:
@@ -171,8 +168,8 @@ ptyxis_profile_dialog_set_property (GObject      *object,
 
   switch (prop_id)
     {
-    case PROP_TAB:
-      self->tab = g_value_dup_object (value);
+    case PROP_SURFACE:
+      self->surface = g_value_dup_object (value);
       break;
 
     default:
@@ -191,9 +188,9 @@ ptyxis_profile_dialog_class_init (PtyxisProfileDialogClass *klass)
   object_class->get_property = ptyxis_profile_dialog_get_property;
   object_class->set_property = ptyxis_profile_dialog_set_property;
 
-  properties[PROP_TAB] =
-    g_param_spec_object ("tab", NULL, NULL,
-                         PTYXIS_TYPE_TAB,
+  properties[PROP_SURFACE] =
+    g_param_spec_object ("surface", NULL, NULL,
+                         PTYXIS_TYPE_TERMINAL_SURFACE,
                          (G_PARAM_READWRITE |
                           G_PARAM_CONSTRUCT_ONLY |
                           G_PARAM_STATIC_STRINGS));
@@ -212,4 +209,3 @@ ptyxis_profile_dialog_init (PtyxisProfileDialog *self)
 {
   gtk_widget_init_template (GTK_WIDGET (self));
 }
-

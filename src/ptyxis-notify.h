@@ -1,5 +1,5 @@
 /*
- * ptyxis-tab-notify.h
+ * ptyxis-notify.h
  *
  * Copyright 2023 Christian Hergert <christian@sourceandstack.com>
  *
@@ -29,15 +29,20 @@
 
 #include <glib/gi18n.h>
 
+#include "ptyxis-terminal.h"
+#include "ptyxis-terminal-surface.h"
 #include "ptyxis-window.h"
 
 #define TIME_WATERMARK_MSEC 250
 
 G_BEGIN_DECLS
 
-typedef struct _PtyxisTabNotify
+typedef struct _PtyxisNotify
 {
-  PtyxisTab *tab;
+  GtkWidget                  *widget;
+  PtyxisTerminal             *terminal;
+  PtyxisTerminalSurface      *surface;
+  const char                 *uuid;
 
   char *current_cmdline;
 
@@ -50,25 +55,28 @@ typedef struct _PtyxisTabNotify
   gint64 command_start_time;
 
   guint between_preexec_and_precmd : 1;
-} PtyxisTabNotify;
+} PtyxisNotify;
 
 static inline void
-ptyxis_tab_notify_show_notification (PtyxisTabNotify *notify,
-                                     const char      *cmdline)
+ptyxis_notify_show_notification (PtyxisNotify *notify,
+                                 const char   *cmdline)
 {
+  PtyxisWindowClass *klass;
   GtkRoot *window;
 
   g_assert (notify != NULL);
-  g_assert (PTYXIS_IS_TAB (notify->tab));
+  g_assert (GTK_IS_WIDGET (notify->widget));
 
-  window = gtk_widget_get_root (GTK_WIDGET (notify->tab));
+  window = gtk_widget_get_root (notify->widget);
 
   if (!PTYXIS_IS_WINDOW (window))
     return;
 
   if (gtk_window_is_active (GTK_WINDOW (window)))
     {
-      if (ptyxis_window_get_active_tab (PTYXIS_WINDOW (window)) == notify->tab)
+      PtyxisTerminalSurface *active = ptyxis_window_get_active_surface (PTYXIS_WINDOW (window));
+
+      if (active == notify->surface)
         return;
     }
   else
@@ -76,15 +84,13 @@ ptyxis_tab_notify_show_notification (PtyxisTabNotify *notify,
       g_autoptr(GNotification) notification = NULL;
       g_autoptr(GIcon) icon = NULL;
       g_autofree char *cmdline_sanitized = NULL;
-      const char *uuid = ptyxis_tab_get_uuid (notify->tab);
-
 #ifdef GDK_WINDOWING_X11
-      {
-        GdkSurface *surface = gtk_native_get_surface (GTK_NATIVE (window));
+      GdkSurface *surface;
 
-        if (GDK_IS_X11_SURFACE (surface))
-          gdk_x11_surface_set_urgency_hint (surface, TRUE);
-      }
+      surface = gtk_native_get_surface (GTK_NATIVE (window));
+
+      if (GDK_IS_X11_SURFACE (surface))
+        gdk_x11_surface_set_urgency_hint (surface, TRUE);
 #endif
 
       icon = g_themed_icon_new (APP_ID "-symbolic");
@@ -95,20 +101,22 @@ ptyxis_tab_notify_show_notification (PtyxisTabNotify *notify,
       g_notification_set_icon (notification, icon);
       g_notification_set_default_action_and_target (notification,
                                                     "app.focus-tab-by-uuid",
-                                                    "s", uuid);
+                                                    "s", notify->uuid);
       g_application_send_notification (G_APPLICATION (PTYXIS_APPLICATION_DEFAULT),
-                                       uuid, notification);
+                                       notify->uuid, notification);
     }
 
-  ptyxis_tab_set_needs_attention (notify->tab, TRUE);
+  klass = PTYXIS_WINDOW_GET_CLASS (window);
+
+  if (klass->surface_needs_attention != NULL)
+    klass->surface_needs_attention (PTYXIS_WINDOW (window), notify->surface);
 }
 
 static inline void
-ptyxis_tab_notify_shell_precmd_cb (PtyxisTerminal  *terminal,
-                                   PtyxisTabNotify *notify)
+ptyxis_notify_shell_precmd_cb (PtyxisTerminal *terminal,
+                               PtyxisNotify   *notify)
 {
   g_assert (PTYXIS_IS_TERMINAL (terminal));
-  g_assert (PTYXIS_IS_TAB (notify->tab));
 
   notify->between_preexec_and_precmd = FALSE;
 
@@ -120,60 +128,58 @@ ptyxis_tab_notify_shell_precmd_cb (PtyxisTerminal  *terminal,
       gint64 elapsed_time = g_get_monotonic_time () - notify->command_start_time;
 
       if (elapsed_time >= TIME_WATERMARK_MSEC * 1000)
-        ptyxis_tab_notify_show_notification (notify, notify->current_cmdline);
+        ptyxis_notify_show_notification (notify, notify->current_cmdline);
 
       g_clear_pointer (&notify->current_cmdline, g_free);
     }
 }
 
 static void
-ptyxis_tab_notify_shell_preexec_poll_cb (GObject      *object,
-                                         GAsyncResult *result,
-                                         gpointer      user_data)
+ptyxis_notify_shell_preexec_poll_cb (GObject      *object,
+                                     GAsyncResult *result,
+                                     gpointer      user_data)
 {
-  PtyxisTab *tab = (PtyxisTab *)object;
-  PtyxisTabNotify *notify = user_data;
+  PtyxisTerminalSurface *surface = (PtyxisTerminalSurface *)object;
+  PtyxisNotify *notify = user_data;
 
-  g_assert (PTYXIS_IS_TAB (tab));
+  g_assert (PTYXIS_IS_TERMINAL_SURFACE (surface));
   g_assert (G_IS_ASYNC_RESULT (result));
   g_assert (notify != NULL);
 
-  ptyxis_tab_poll_agent_finish (tab, result, NULL);
+  ptyxis_terminal_surface_poll_agent_finish (surface, result, NULL);
 
   g_set_str (&notify->current_cmdline,
-             ptyxis_tab_get_command_line (tab));
+             ptyxis_terminal_surface_get_command_line (surface));
 }
 
 static inline void
-ptyxis_tab_notify_shell_preexec_cb (PtyxisTerminal  *terminal,
-                                    PtyxisTabNotify *notify)
+ptyxis_notify_shell_preexec_cb (PtyxisTerminal *terminal,
+                                PtyxisNotify   *notify)
 {
   g_assert (PTYXIS_IS_TERMINAL (terminal));
-  g_assert (PTYXIS_IS_TAB (notify->tab));
 
   notify->between_preexec_and_precmd = TRUE;
   notify->command_start_time = g_get_monotonic_time ();
 
   g_set_str (&notify->current_cmdline, NULL);
 
-  /* We will poll the agent for the updated command line. If we get
-   * precmd back in before this completes, we will ignore showing
-   * any notification as it's so quick it shouldn't matter. We
-   * can pass a borrowed notify as it's owned by @tab.
-   */
-  ptyxis_tab_poll_agent_async (notify->tab,
-                               NULL,
-                               ptyxis_tab_notify_shell_preexec_poll_cb,
-                               notify);
+  ptyxis_terminal_surface_poll_agent_async (notify->surface,
+                                            NULL,
+                                            ptyxis_notify_shell_preexec_poll_cb,
+                                            notify);
 }
 
 static inline void
-ptyxis_tab_notify_init (PtyxisTabNotify *notify,
-                        PtyxisTab       *tab)
+ptyxis_notify_init (PtyxisNotify          *notify,
+                    GtkWidget             *widget,
+                    PtyxisTerminal        *terminal,
+                    PtyxisTerminalSurface *surface,
+                    const char            *uuid)
 {
-  PtyxisTerminal *terminal = ptyxis_tab_get_terminal (tab);
-
-  notify->tab = tab;
+  notify->widget = widget;
+  notify->terminal = terminal;
+  notify->surface = surface;
+  notify->uuid = uuid;
 
   notify->contents_changed_source = 0;
   notify->shell_preexec_source = 0;
@@ -184,33 +190,31 @@ ptyxis_tab_notify_init (PtyxisTabNotify *notify,
   notify->shell_precmd_handler =
     g_signal_connect (terminal,
                       "shell-precmd",
-                      G_CALLBACK (ptyxis_tab_notify_shell_precmd_cb),
+                      G_CALLBACK (ptyxis_notify_shell_precmd_cb),
                       notify);
 
   notify->shell_preexec_handler =
     g_signal_connect (terminal,
                       "shell-preexec",
-                      G_CALLBACK (ptyxis_tab_notify_shell_preexec_cb),
+                      G_CALLBACK (ptyxis_notify_shell_preexec_cb),
                       notify);
 }
 
 static inline void
-ptyxis_tab_notify_destroy (PtyxisTabNotify *notify)
+ptyxis_notify_destroy (PtyxisNotify *notify)
 {
-  PtyxisTerminal *terminal = ptyxis_tab_get_terminal (notify->tab);
-
-  if (notify->tab == NULL)
+  if (notify->widget == NULL)
     return;
 
   g_clear_handle_id (&notify->contents_changed_source, g_source_remove);
   g_clear_handle_id (&notify->shell_preexec_source, g_source_remove);
 
-  g_clear_signal_handler (&notify->shell_precmd_handler, terminal);
-  g_clear_signal_handler (&notify->shell_preexec_handler, terminal);
+  g_clear_signal_handler (&notify->shell_precmd_handler, notify->terminal);
+  g_clear_signal_handler (&notify->shell_preexec_handler, notify->terminal);
 
   g_clear_pointer (&notify->current_cmdline, g_free);
 
-  notify->tab = NULL;
+  notify->widget = NULL;
 }
 
 G_END_DECLS

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2024 Sebastian Wick
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+  SPDX-License-Identifier: GPL-3.0-or-later
+-->
+<interface>
+  <template class="PtyxisPane" parent="GtkWidget">
+    <child>
+      <object class="GtkBox" id="box">
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkCenterBox" id="chrome">
+            <style>
+              <class name="pane-chrome"/>
+            </style>
+            <property name="start-widget">
+              <object class="GtkMenuButton" id="title_button">
+                <style>
+                  <class name="flat"/>
+                </style>
+                <property name="menu-model">pane_menu</property>
+                <child>
+                  <object class="GtkBox">
+                    <property name="spacing">4</property>
+                    <child>
+                      <object class="GtkLabel" id="title_label">
+                        <property name="ellipsize">end</property>
+                        <property name="single-line-mode">true</property>
+                        <property name="max-width-chars">40</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkImage" id="read_only_icon">
+                        <property name="icon-name">changes-prevent-symbolic</property>
+                        <property name="visible">false</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkImage">
+                        <property name="icon-name">pan-down-symbolic</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </property>
+            <property name="end-widget">
+              <object class="GtkBox">
+                <property name="spacing">0</property>
+                <property name="valign">center</property>
+                <child>
+                  <object class="GtkButton" id="split_down_button">
+                    <style>
+                      <class name="flat"/>
+                      <class name="circular"/>
+                    </style>
+                    <property name="icon-name">split-pane-down-symbolic</property>
+                    <property name="action-name">win.split-down</property>
+                    <property name="tooltip-text" translatable="yes">Split Down</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="split_right_button">
+                    <style>
+                      <class name="flat"/>
+                      <class name="circular"/>
+                    </style>
+                    <property name="icon-name">split-pane-right-symbolic</property>
+                    <property name="action-name">win.split-right</property>
+                    <property name="tooltip-text" translatable="yes">Split Right</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="maximize_button">
+                    <style>
+                      <class name="flat"/>
+                      <class name="circular"/>
+                    </style>
+                    <property name="icon-name">window-maximize-symbolic</property>
+                    <property name="action-name">win.toggle-maximize-pane</property>
+                    <property name="tooltip-text" translatable="yes">Maximize</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkButton" id="close_button">
+                    <style>
+                      <class name="flat"/>
+                      <class name="circular"/>
+                    </style>
+                    <property name="icon-name">window-close-symbolic</property>
+                    <property name="action-name">pane.close</property>
+                    <property name="tooltip-text" translatable="yes">Close</property>
+                  </object>
+                </child>
+              </object>
+            </property>
+          </object>
+        </child>
+        <child>
+          <object class="AdwBanner" id="banner">
+            <property name="revealed">true</property>
+            <property name="visible">false</property>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+  <menu id="pane_menu">
+    <section>
+      <item>
+        <attribute name="custom">zoom</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">Set Title</attribute>
+        <attribute name="action">win.set-title</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="custom">read-only</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Inspect Terminal</attribute>
+        <attribute name="action">pane.inspect</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">Reset</attribute>
+        <attribute name="action">tab.reset</attribute>
+        <attribute name="target" type="b">false</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Reset and Clear</attribute>
+        <attribute name="action">tab.reset</attribute>
+        <attribute name="target" type="b">true</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">Change Profile</attribute>
+        <attribute name="action">win.set-profile</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+    </section>
+  </menu>
+</interface>

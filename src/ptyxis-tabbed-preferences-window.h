@@ -1,5 +1,5 @@
 /*
- * ptyxis-tab-monitor.h
+ * ptyxis-tabbed-preferences-window.h
  *
  * Copyright 2023 Christian Hergert <christian@sourceandstack.com>
  *
@@ -21,19 +21,12 @@
 
 #pragma once
 
-#include <gio/gio.h>
-
-#include "ptyxis-tab.h"
+#include "ptyxis-preferences-window.h"
 
 G_BEGIN_DECLS
 
-#define PTYXIS_TYPE_TAB_MONITOR (ptyxis_tab_monitor_get_type())
+#define PTYXIS_TYPE_TABBED_PREFERENCES_WINDOW (ptyxis_tabbed_preferences_window_get_type())
 
-G_DECLARE_FINAL_TYPE (PtyxisTabMonitor, ptyxis_tab_monitor, PTYXIS, TAB_MONITOR, GObject)
-
-PtyxisTabMonitor *ptyxis_tab_monitor_new                 (PtyxisTab        *tab);
-gboolean          ptyxis_tab_monitor_get_has_pressed_key (PtyxisTabMonitor *self);
-void              ptyxis_tab_monitor_set_has_pressed_key (PtyxisTabMonitor *self,
-                                                          gboolean          has_pressed_key);
+G_DECLARE_FINAL_TYPE (PtyxisTabbedPreferencesWindow, ptyxis_tabbed_preferences_window, PTYXIS, TABBED_PREFERENCES_WINDOW, PtyxisPreferencesWindow)
 
 G_END_DECLS

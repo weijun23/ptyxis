@@ -220,62 +220,61 @@ ptyxis_terminal_intent_handle_launch_command (FdoTerminal1          *intent,
 
   g_variant_lookup (options, "keep-terminal-open", "b", &keep_terminal_open);
 
-  if (argvs->len == 0)
-    {
-      PtyxisTab *tab;
+  {
+    if (argvs->len == 0)
+      {
+        PtyxisTerminalSurface *surface;
 
-      window = ptyxis_window_new ();
-      tab = ptyxis_window_get_active_tab (window);
+        window = ptyxis_application_new_window (PTYXIS_APPLICATION_DEFAULT);
+        surface = ptyxis_window_get_active_surface (window);
 
-      if (path != NULL)
-        ptyxis_tab_set_initial_working_directory_uri (tab, path);
+        if (path != NULL)
+          ptyxis_terminal_surface_set_initial_working_directory_uri (surface, path);
 
-      if (name != NULL)
-        {
-          ptyxis_tab_set_ignore_osc_title (tab, TRUE);
-          ptyxis_tab_set_title_prefix (tab, name);
-        }
+        if (name != NULL)
+          {
+            ptyxis_terminal_surface_set_ignore_osc_title (surface, TRUE);
+            ptyxis_terminal_surface_set_title_prefix (surface, name);
+          }
 
-      if (keep_terminal_open)
-        ptyxis_tab_set_keep_terminal_open (tab, TRUE);
-    }
-  else
-    window = ptyxis_window_new_empty ();
+        if (keep_terminal_open)
+          ptyxis_terminal_surface_set_keep_terminal_open (surface, TRUE);
+      }
+    else
+      {
+        window = ptyxis_application_new_window_empty (PTYXIS_APPLICATION_DEFAULT);
+      }
 
-  for (size_t i = 0; i < argvs->len; i++)
-    {
-      PtyxisTab *tab;
-      const char *const *argv = argvs->pdata[i];
-      const char *const *env = envs->pdata[i];
-      const char *cwd_uri = cwd_uris->pdata[i];
+    for (size_t i = 0; i < argvs->len; i++)
+      {
+        PtyxisTerminalSurface *surface;
+        const char *const *argv = argvs->pdata[i];
+        const char *const *env = envs->pdata[i];
+        const char *cwd_uri = cwd_uris->pdata[i];
 
-      tab = ptyxis_tab_new (profile);
+        surface = ptyxis_window_add_terminal (window, profile);
 
-      if (argv != NULL)
-        ptyxis_tab_set_command (tab, argv);
+        if (argv != NULL)
+          ptyxis_terminal_surface_set_command (surface, argv);
 
-      if (env != NULL)
-        ptyxis_tab_set_environment (tab, env);
+        if (env != NULL)
+          ptyxis_terminal_surface_set_environment (surface, env);
 
-      if (cwd_uri != NULL)
-        ptyxis_tab_set_initial_working_directory_uri (tab, cwd_uri);
-      else if (path != NULL)
-        ptyxis_tab_set_initial_working_directory_uri (tab, path);
+        if (cwd_uri != NULL)
+          ptyxis_terminal_surface_set_initial_working_directory_uri (surface, cwd_uri);
+        else if (path != NULL)
+          ptyxis_terminal_surface_set_initial_working_directory_uri (surface, path);
 
-      if (name != NULL)
-        {
-          ptyxis_tab_set_ignore_osc_title (tab, TRUE);
-          ptyxis_tab_set_title_prefix (tab, name);
-        }
+        if (name != NULL)
+          {
+            ptyxis_terminal_surface_set_ignore_osc_title (surface, TRUE);
+            ptyxis_terminal_surface_set_title_prefix (surface, name);
+          }
 
-      if (keep_terminal_open)
-        ptyxis_tab_set_keep_terminal_open (tab, TRUE);
-
-      ptyxis_window_add_tab (window, tab);
-
-      if (i == 0)
-        ptyxis_window_set_active_tab (window, tab);
-    }
+        if (keep_terminal_open)
+          ptyxis_terminal_surface_set_keep_terminal_open (surface, TRUE);
+      }
+  }
 
   gtk_window_present (GTK_WINDOW (window));
 

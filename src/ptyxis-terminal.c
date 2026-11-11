@@ -33,8 +33,8 @@
 #include "ptyxis-application.h"
 #include "ptyxis-custom-link.h"
 #include "ptyxis-shortcuts.h"
-#include "ptyxis-tab.h"
 #include "ptyxis-terminal.h"
+#include "ptyxis-terminal-surface.h"
 #include "ptyxis-util.h"
 #include "ptyxis-window.h"
 
@@ -55,6 +55,7 @@ struct _PtyxisTerminal
 {
   VteTerminal        parent_instance;
 
+  PtyxisTerminalSurface *surface;
   PtyxisShortcuts    *shortcuts;
   PtyxisPalette      *palette;
   char               *url;
@@ -190,17 +191,16 @@ ptyxis_terminal_toast (PtyxisTerminal *self,
 static gboolean
 ptyxis_terminal_is_active (PtyxisTerminal *self)
 {
-  PtyxisTerminal *active_terminal = NULL;
   PtyxisWindow *window;
-  PtyxisTab *active_tab;
+  PtyxisTerminalSurface *active_surface;
 
   g_assert (PTYXIS_IS_TERMINAL (self));
 
   if ((window = PTYXIS_WINDOW (gtk_widget_get_ancestor (GTK_WIDGET (self), PTYXIS_TYPE_WINDOW))) &&
-      (active_tab = ptyxis_window_get_active_tab (window)))
-    active_terminal = ptyxis_tab_get_terminal (active_tab);
+      (active_surface = ptyxis_window_get_active_surface (window)))
+    return ptyxis_terminal_surface_get_terminal (active_surface) == self;
 
-  return active_terminal == self;
+  return FALSE;
 }
 
 static void
@@ -288,13 +288,29 @@ ptyxis_terminal_setup_context_menu (VteTerminal           *terminal,
       return;
     }
 
+  if (self->terminal_menu == NULL)
+    {
+      GtkWidget *window = gtk_widget_get_ancestor (GTK_WIDGET (self), PTYXIS_TYPE_WINDOW);
+
+      if (window != NULL)
+        {
+          self->terminal_menu = ptyxis_window_create_terminal_menu (PTYXIS_WINDOW (window));
+
+          if (self->terminal_menu != NULL)
+            {
+              gtk_popover_menu_set_menu_model (GTK_POPOVER_MENU (self->popover),
+                                               G_MENU_MODEL (self->terminal_menu));
+              ptyxis_shortcuts_update_menu (self->shortcuts, self->terminal_menu);
+            }
+        }
+    }
+
   ptyxis_terminal_update_clipboard_actions (self);
 
   vte_event_context_get_coordinates (context, &x, &y);
 
   ptyxis_terminal_update_url_actions (self, x, y);
   gtk_popover_set_pointing_to (self->popover, &(GdkRectangle) {x, y, 1, 1});
-
   if (gtk_widget_get_direction (GTK_WIDGET (self)) == GTK_TEXT_DIR_RTL)
     gtk_widget_set_halign (GTK_WIDGET (self->popover), GTK_ALIGN_END);
   else
@@ -536,16 +552,14 @@ open_link_action (GtkWidget  *widget,
                   GVariant   *param)
 {
   PtyxisTerminal *self = (PtyxisTerminal *)widget;
-  PtyxisTab *tab;
 
   g_assert (PTYXIS_IS_TERMINAL (self));
 
   if (ptyxis_str_empty0 (self->url))
     return;
 
-  tab = PTYXIS_TAB (gtk_widget_get_ancestor (widget, PTYXIS_TYPE_TAB));
-
-  ptyxis_tab_open_uri (tab, self->url);
+  if (self->surface != NULL)
+    ptyxis_terminal_surface_open_uri (self->surface, self->url);
 }
 
 static void
@@ -1361,6 +1375,7 @@ ptyxis_terminal_dispose (GObject *object)
 
   gtk_widget_dispose_template (GTK_WIDGET (self), PTYXIS_TYPE_TERMINAL);
 
+  g_clear_object (&self->terminal_menu);
   g_clear_object (&self->palette);
   g_clear_object (&self->shortcuts);
   g_clear_handle_id (&self->size_dismiss_source, g_source_remove);
@@ -1524,7 +1539,6 @@ ptyxis_terminal_class_init (PtyxisTerminalClass *klass)
   gtk_widget_class_bind_template_child (widget_class, PtyxisTerminal, popover);
   gtk_widget_class_bind_template_child (widget_class, PtyxisTerminal, size_label);
   gtk_widget_class_bind_template_child (widget_class, PtyxisTerminal, size_revealer);
-  gtk_widget_class_bind_template_child (widget_class, PtyxisTerminal, terminal_menu);
 
   gtk_widget_class_bind_template_callback (widget_class, ptyxis_terminal_capture_click_pressed_cb);
   gtk_widget_class_bind_template_callback (widget_class, ptyxis_terminal_capture_key_pressed_cb);
@@ -1632,6 +1646,23 @@ ptyxis_terminal_get_palette (PtyxisTerminal *self)
   g_return_val_if_fail (PTYXIS_IS_TERMINAL (self), NULL);
 
   return self->palette;
+}
+
+PtyxisTerminalSurface *
+ptyxis_terminal_get_surface (PtyxisTerminal *self)
+{
+  g_return_val_if_fail (PTYXIS_IS_TERMINAL (self), NULL);
+
+  return self->surface;
+}
+
+void
+ptyxis_terminal_set_surface (PtyxisTerminal        *self,
+                             PtyxisTerminalSurface *surface)
+{
+  g_return_if_fail (PTYXIS_IS_TERMINAL (self));
+
+  self->surface = surface;
 }
 
 void

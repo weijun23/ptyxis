@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <menu id="terminal_menu">
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">_Open Link</attribute>
+        <attribute name="action">terminal.open-link</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">_Copy Link</attribute>
+        <attribute name="action">clipboard.copy-link</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="id">search</attribute>
+        <attribute name="label" translatable="yes">Search…</attribute>
+        <attribute name="action">win.search</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="id">copy-clipboard</attribute>
+        <attribute name="label" translatable="yes">_Copy</attribute>
+        <attribute name="description" translatable="yes">Copy selection from terminal to clipboard</attribute>
+        <attribute name="action">clipboard.copy</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Copy as _HTML</attribute>
+        <attribute name="description" translatable="yes">Copy selection from terminal to clipboard with HTML formatting</attribute>
+        <attribute name="action">clipboard.copy-as-html</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+      <item>
+        <attribute name="id">paste-clipboard</attribute>
+        <attribute name="label" translatable="yes">_Paste</attribute>
+        <attribute name="description" translatable="yes">Paste from clipboard into the terminal</attribute>
+        <attribute name="action">clipboard.paste</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="id">select-all</attribute>
+        <attribute name="label" translatable="yes">Select _All</attribute>
+        <attribute name="description" translatable="yes">Selection all text from terminal including scrollback</attribute>
+        <attribute name="action">terminal.select-all</attribute>
+        <attribute name="target" type="b">true</attribute>
+      </item>
+      <item>
+        <attribute name="id">select-none</attribute>
+        <attribute name="label" translatable="yes">Select _None</attribute>
+        <attribute name="action">terminal.select-all</attribute>
+        <attribute name="target" type="b">false</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="id">toggle-fullscreen</attribute>
+        <attribute name="label" translatable="yes">Leave Fullscreen</attribute>
+        <attribute name="action">win.unfullscreen</attribute>
+        <attribute name="hidden-when">action-disabled</attribute>
+      </item>
+    </section>
+  </menu>
+</interface>

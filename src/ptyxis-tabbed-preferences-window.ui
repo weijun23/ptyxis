@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+  <object class="AdwComboRow" id="tab_position">
+    <property name="title" translatable="yes">New Tab Position</property>
+    <property name="expression">
+      <lookup name="title" type="PtyxisPreferencesListItem"/>
+    </property>
+    <property name="model">
+      <object class="GListStore" id="tab_positions">
+        <property name="item-type">PtyxisPreferencesListItem</property>
+        <child>
+          <object class="PtyxisPreferencesListItem">
+            <property name="title" translatable="yes">Next</property>
+            <property name="value">'next'</property>
+          </object>
+        </child>
+        <child>
+          <object class="PtyxisPreferencesListItem">
+            <property name="title" translatable="yes">Last</property>
+            <property name="value">'last'</property>
+          </object>
+        </child>
+      </object>
+    </property>
+  </object>
+  <object class="AdwPreferencesGroup" id="tabs_group_1">
+    <property name="title" translatable="yes">Tabs</property>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">New Tab</property>
+        <property name="subtitle" translatable="yes">Open a new tab in the current window</property>
+        <property name="shortcut-name">new-tab</property>
+      </object>
+    </child>
+  </object>
+  <object class="AdwPreferencesGroup" id="tabs_group_2">
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">View Tab Overview</property>
+        <property name="subtitle" translatable="yes">Show an overview of all tabs within the window</property>
+        <property name="shortcut-name">tab-overview</property>
+      </object>
+    </child>
+  </object>
+  <object class="AdwPreferencesGroup" id="tabs_group_3">
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Close Tab</property>
+        <property name="subtitle" translatable="yes">Close the current tab</property>
+        <property name="shortcut-name">close-tab</property>
+      </object>
+    </child>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Close Other Tabs</property>
+        <property name="subtitle" translatable="yes">Close all tabs except the active tab</property>
+        <property name="shortcut-name">close-other-tabs</property>
+      </object>
+    </child>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Undo Close Tab</property>
+        <property name="subtitle" translatable="yes">Undo closing the last tab</property>
+        <property name="shortcut-name">undo-close-tab</property>
+      </object>
+    </child>
+  </object>
+  <object class="AdwPreferencesGroup" id="tabs_group_4">
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Move to Previous Tab</property>
+        <property name="shortcut-name">move-previous-tab</property>
+      </object>
+    </child>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Move to Next Tab</property>
+        <property name="shortcut-name">move-next-tab</property>
+      </object>
+    </child>
+  </object>
+  <object class="AdwPreferencesGroup" id="tabs_group_5">
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Move Tab Left</property>
+        <property name="subtitle" translatable="yes">Move the tab one position to the left</property>
+        <property name="shortcut-name">move-tab-left</property>
+      </object>
+    </child>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Move Tab Right</property>
+        <property name="subtitle" translatable="yes">Move the tab one position to the right</property>
+        <property name="shortcut-name">move-tab-right</property>
+      </object>
+    </child>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Move Tab to New Window</property>
+        <property name="subtitle" translatable="yes">Detach the current tab and move it to a new window</property>
+        <property name="shortcut-name">detach-tab</property>
+      </object>
+    </child>
+  </object>
+  <object class="AdwPreferencesGroup" id="tabs_group_6">
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Switch to Tab 1</property>
+        <property name="shortcut-name">focus-tab-1</property>
+      </object>
+    </child>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Switch to Tab 2</property>
+        <property name="shortcut-name">focus-tab-2</property>
+      </object>
+    </child>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Switch to Tab 3</property>
+        <property name="shortcut-name">focus-tab-3</property>
+      </object>
+    </child>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Switch to Tab 4</property>
+        <property name="shortcut-name">focus-tab-4</property>
+      </object>
+    </child>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Switch to Tab 5</property>
+        <property name="shortcut-name">focus-tab-5</property>
+      </object>
+    </child>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Switch to Tab 6</property>
+        <property name="shortcut-name">focus-tab-6</property>
+      </object>
+    </child>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Switch to Tab 7</property>
+        <property name="shortcut-name">focus-tab-7</property>
+      </object>
+    </child>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Switch to Tab 8</property>
+        <property name="shortcut-name">focus-tab-8</property>
+      </object>
+    </child>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Switch to Tab 9</property>
+        <property name="shortcut-name">focus-tab-9</property>
+      </object>
+    </child>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Switch to Tab 10</property>
+        <property name="shortcut-name">focus-tab-10</property>
+      </object>
+    </child>
+    <child>
+      <object class="PtyxisShortcutRow">
+        <property name="title" translatable="yes">Switch to Last Tab</property>
+        <property name="shortcut-name">focus-tab-last</property>
+      </object>
+    </child>
+  </object>
+  <template class="PtyxisTabbedPreferencesWindow" parent="PtyxisPreferencesWindow">
+  </template>
+</interface>

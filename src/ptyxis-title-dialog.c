@@ -22,23 +22,21 @@
 #include "config.h"
 
 #include "ptyxis-title-dialog.h"
-#include "ptyxis-tab.h"
+#include "ptyxis-terminal-surface.h"
 
 struct _PtyxisTitleDialog
 {
-  AdwDialog     parent_instance;
+  AdwDialog              parent_instance;
 
-  /* Owned references */
-  PtyxisTab    *tab;
+  PtyxisTerminalSurface *surface; /* (owned) (not nullable) */
 
-  /* Template Widgets */
   AdwEntryRow  *entry;
   AdwSwitchRow *toggle_prefix_only;
 };
 
 enum {
   PROP_0,
-  PROP_TAB,
+  PROP_SURFACE,
   N_PROPS
 };
 
@@ -56,6 +54,19 @@ ptyxis_title_dialog_activate_cb (PtyxisTitleDialog *self,
   adw_dialog_close (ADW_DIALOG (self));
 }
 
+static gboolean
+null_to_empty_string (GBinding     *binding,
+                      const GValue *from,
+                      GValue       *to,
+                      gpointer      user_data)
+{
+  const char *str = g_value_get_string (from);
+
+  g_value_set_string (to, str ? str : "");
+
+  return TRUE;
+}
+
 static void
 ptyxis_title_dialog_constructed (GObject *object)
 {
@@ -65,9 +76,10 @@ ptyxis_title_dialog_constructed (GObject *object)
 
   G_OBJECT_CLASS (ptyxis_title_dialog_parent_class)->constructed (object);
 
-  g_object_bind_property (self->tab, "title-prefix", self->entry, "text",
-                          G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL);
-  g_object_bind_property (self->tab, "ignore-osc-title", self->toggle_prefix_only, "active",
+  g_object_bind_property_full (self->surface, "initial-title", self->entry, "text",
+                               G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL,
+                               null_to_empty_string, NULL, NULL, NULL);
+  g_object_bind_property (self->surface, "ignore-osc-title", self->toggle_prefix_only, "active",
                           G_BINDING_SYNC_CREATE | G_BINDING_BIDIRECTIONAL | G_BINDING_INVERT_BOOLEAN);
 }
 
@@ -78,7 +90,7 @@ ptyxis_title_dialog_dispose (GObject *object)
 
   gtk_widget_dispose_template (GTK_WIDGET (self), PTYXIS_TYPE_TITLE_DIALOG);
 
-  g_clear_object (&self->tab);
+  g_clear_object (&self->surface);
 
   G_OBJECT_CLASS (ptyxis_title_dialog_parent_class)->dispose (object);
 }
@@ -93,8 +105,8 @@ ptyxis_title_dialog_get_property (GObject    *object,
 
   switch (prop_id)
     {
-    case PROP_TAB:
-      g_value_set_object (value, self->tab);
+    case PROP_SURFACE:
+      g_value_set_object (value, self->surface);
       break;
 
     default:
@@ -112,8 +124,8 @@ ptyxis_title_dialog_set_property (GObject      *object,
 
   switch (prop_id)
     {
-    case PROP_TAB:
-      self->tab = g_value_dup_object (value);
+    case PROP_SURFACE:
+      self->surface = g_value_dup_object (value);
       break;
 
     default:
@@ -132,9 +144,9 @@ ptyxis_title_dialog_class_init (PtyxisTitleDialogClass *klass)
   object_class->get_property = ptyxis_title_dialog_get_property;
   object_class->set_property = ptyxis_title_dialog_set_property;
 
-  properties[PROP_TAB] =
-    g_param_spec_object ("tab", NULL, NULL,
-                         PTYXIS_TYPE_TAB,
+  properties[PROP_SURFACE] =
+    g_param_spec_object ("surface", NULL, NULL,
+                         PTYXIS_TYPE_TERMINAL_SURFACE,
                          (G_PARAM_READWRITE |
                           G_PARAM_CONSTRUCT_ONLY |
                           G_PARAM_STATIC_STRINGS));
