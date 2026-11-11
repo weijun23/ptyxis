@@ -1,5 +1,6 @@
 man_config = configuration_data()
 man_config.set('app_id', app_id)
+man_config.set('app_path', '/' + app_id.replace('.', '/').replace('-', '_'))
 man_page = configure_file(
           input: 'ptyxis.1.in',
          output: 'ptyxis.1',

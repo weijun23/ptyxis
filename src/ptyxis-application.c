@@ -1804,6 +1804,7 @@ typedef struct _Spawn
 {
   PtyxisIpcContainer *container;
   PtyxisProfile *profile;
+  char *tab_uuid;
   char *last_working_directory_uri;
   VtePty *pty;
   char **argv;
@@ -1818,6 +1819,7 @@ spawn_free (gpointer data)
   g_clear_object (&spawn->container);
   g_clear_object (&spawn->profile);
   g_clear_object (&spawn->pty);
+  g_clear_pointer (&spawn->tab_uuid, g_free);
   g_clear_pointer (&spawn->last_working_directory_uri, g_free);
   g_clear_pointer (&spawn->argv, g_strfreev);
   g_clear_pointer (&spawn->env, g_strfreev);
@@ -1880,6 +1882,7 @@ ptyxis_application_check_shell_cb (GObject      *object,
   ptyxis_client_spawn_async (self->client,
                              spawn->container,
                              spawn->profile,
+                             spawn->tab_uuid,
                              default_shell_path,
                              spawn->last_working_directory_uri,
                              spawn->pty,
@@ -1935,6 +1938,7 @@ void
 ptyxis_application_spawn_async (PtyxisApplication   *self,
                                 PtyxisIpcContainer  *container,
                                 PtyxisProfile       *profile,
+                                const char          *tab_uuid,
                                 const char          *last_working_directory_uri,
                                 VtePty              *pty,
                                 const char * const  *argv,
@@ -1960,6 +1964,7 @@ ptyxis_application_spawn_async (PtyxisApplication   *self,
   g_set_object (&spawn->container, container);
   g_set_object (&spawn->profile, profile);
   g_set_object (&spawn->pty, pty);
+  g_set_str (&spawn->tab_uuid, tab_uuid);
   g_set_str (&spawn->last_working_directory_uri, last_working_directory_uri);
   spawn->argv = g_strdupv ((char **)argv);
   spawn->env = g_strdupv ((char **)env);

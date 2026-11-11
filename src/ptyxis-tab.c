@@ -607,6 +607,7 @@ ptyxis_tab_respawn (PtyxisTab *self)
   ptyxis_application_spawn_async (PTYXIS_APPLICATION_DEFAULT,
                                   container,
                                   self->profile,
+                                  ptyxis_tab_get_uuid (self),
                                   cwd_uri,
                                   pty,
                                   (const char * const *)self->command,

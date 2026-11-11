@@ -2,7 +2,7 @@
 .\" First parameter, NAME, should be all caps
 .\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
 .\" other parameters are allowed: see man(7), man(1)
-.TH Ptyxis 1 "16 January 2026"
+.TH Ptyxis 1 "11 November 2026"
 .\" Please adjust this date whenever revising the manpage.
 .\"
 .\" Some roff macros, for reference:
@@ -320,6 +320,36 @@ Color12=#0000ff
 Color13=#ff00ff
 Color14=#00ffff
 Color15=#ffffff
+.fi
+
+.SH ENVIRONMENT
+Ptyxis sets the following variables in the environment of the
+command it runs in each tab.
+
+.TP
+.B PTYXIS_VERSION
+The version of Ptyxis that started the command.
+
+.TP
+.B PTYXIS_PROFILE
+The
+.B UUID
+of the profile used by the tab.
+
+.TP
+.B PTYXIS_TAB
+The
+.B UUID
+of the tab. It is the argument of the application's
+.B \%focus\-tab\-by\-uuid
+action, which selects the tab and presents its window, and which
+can be activated over D-Bus with:
+
+.nf
+gdbus call \-\-session \-\-dest @app_id@ \e
+    \-\-object\-path @app_path@ \e
+    \-\-method org.gtk.Actions.Activate \e
+    focus\-tab\-by\-uuid \(aq[<"\fIUUID\fR">]\(aq \(aq{}\(aq
 .fi
 
 .SH SEE ALSO

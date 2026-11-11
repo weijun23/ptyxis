@@ -600,6 +600,7 @@ void
 ptyxis_client_spawn_async (PtyxisClient        *self,
                            PtyxisIpcContainer  *container,
                            PtyxisProfile       *profile,
+                           const char          *tab_uuid,
                            const char          *default_shell,
                            const char          *last_working_directory_uri,
                            VtePty              *pty,
@@ -668,6 +669,8 @@ ptyxis_client_spawn_async (PtyxisClient        *self,
     env = ptyxis_client_discover_proxy_environment (self, NULL, NULL);
 
   env = g_environ_setenv (env, "PTYXIS_PROFILE", ptyxis_profile_get_uuid (profile), TRUE);
+  if (tab_uuid != NULL)
+    env = g_environ_setenv (env, "PTYXIS_TAB", tab_uuid, TRUE);
   env = g_environ_setenv (env, "PTYXIS_VERSION", PACKAGE_VERSION, TRUE);
   env = g_environ_setenv (env, "COLORTERM", "truecolor", TRUE);
   env = g_environ_setenv (env, "TERM", "xterm-256color", TRUE);

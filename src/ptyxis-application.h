@@ -65,6 +65,7 @@ VtePty             *ptyxis_application_create_pty                 (PtyxisApplica
 void                ptyxis_application_spawn_async                (PtyxisApplication    *self,
                                                                    PtyxisIpcContainer   *container,
                                                                    PtyxisProfile        *profile,
+                                                                   const char           *tab_uuid,
                                                                    const char           *last_working_directory_uri,
                                                                    VtePty               *pty,
                                                                    const char * const   *argv,

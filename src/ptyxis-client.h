@@ -55,6 +55,7 @@ char               *ptyxis_client_discover_shell_finish      (PtyxisClient      
 void                ptyxis_client_spawn_async                (PtyxisClient         *self,
                                                               PtyxisIpcContainer   *container,
                                                               PtyxisProfile        *profile,
+                                                              const char           *tab_uuid,
                                                               const char           *default_shell,
                                                               const char           *last_working_directory_uri,
                                                               VtePty               *pty,
