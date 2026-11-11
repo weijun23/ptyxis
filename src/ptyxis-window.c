@@ -27,6 +27,7 @@
 #include "ptyxis-find-bar.h"
 #include "ptyxis-fullscreen-box.h"
 #include "ptyxis-gated-list-model.h"
+#include "ptyxis-grid-size-private.h"
 #include "ptyxis-menu-row.h"
 #include "ptyxis-parking-lot.h"
 #include "ptyxis-preferences-window.h"
@@ -87,6 +88,17 @@ struct _PtyxisWindow
   guint                  visual_bell_source;
   guint                  focus_active_tab_source;
 
+  struct {
+    PtyxisTerminal      *terminal;
+    GdkToplevelState     state;
+    int                  base_width;
+    int                  base_height;
+    int                  cell_width;
+    int                  cell_height;
+    gboolean             tab_bar_visible;
+    gboolean             find_bar_revealed;
+  } grid;
+
   guint                  tab_overview_animating : 1;
   guint                  disposed : 1;
   guint                  single_terminal_mode : 1;
@@ -106,6 +118,15 @@ enum {
 };
 
 static GParamSpec *properties[N_PROPS];
+
+static const GdkToplevelState grid_state_mask =
+  (GDK_TOPLEVEL_STATE_MAXIMIZED |
+   GDK_TOPLEVEL_STATE_FULLSCREEN |
+   GDK_TOPLEVEL_STATE_TILED |
+   GDK_TOPLEVEL_STATE_TOP_TILED |
+   GDK_TOPLEVEL_STATE_RIGHT_TILED |
+   GDK_TOPLEVEL_STATE_BOTTOM_TILED |
+   GDK_TOPLEVEL_STATE_LEFT_TILED);
 
 static void
 ptyxis_window_save_size (PtyxisWindow *self)
@@ -1165,6 +1186,95 @@ ptyxis_window_toplevel_state_changed_cb (PtyxisWindow *self,
 }
 
 static void
+ptyxis_window_compute_size_cb (PtyxisWindow    *self,
+                               GdkToplevelSize *size,
+                               GdkToplevel     *toplevel)
+{
+  PtyxisTab *tab;
+  GtkWidget *terminal;
+  int proposed_width, proposed_height;
+  int width, height;
+  int min_width, min_height;
+  int cell_width, cell_height;
+
+  g_assert (PTYXIS_IS_WINDOW (self));
+  g_assert (GDK_IS_TOPLEVEL (toplevel));
+
+  if (!gdk_toplevel_size_get_proposed_size (size, &proposed_width, &proposed_height) ||
+      adw_tab_overview_get_open (self->tab_overview) ||
+      self->tab_overview_animating ||
+      adw_application_window_get_visible_dialog (ADW_APPLICATION_WINDOW (self)) != NULL ||
+      !(tab = ptyxis_window_get_active_tab (self)))
+    return;
+
+  terminal = GTK_WIDGET (ptyxis_tab_get_terminal (tab));
+
+  if (!gtk_widget_get_mapped (terminal) ||
+      terminal != GTK_WIDGET (self->grid.terminal) ||
+      (gdk_toplevel_get_state (toplevel) & grid_state_mask) != self->grid.state ||
+      gtk_widget_get_visible (GTK_WIDGET (self->tab_bar)) != self->grid.tab_bar_visible ||
+      gtk_revealer_get_reveal_child (self->find_bar_revealer) != self->grid.find_bar_revealed)
+    return;
+
+  cell_width = vte_terminal_get_char_width (VTE_TERMINAL (terminal));
+  cell_height = vte_terminal_get_char_height (VTE_TERMINAL (terminal));
+
+  if (cell_width != self->grid.cell_width ||
+      cell_height != self->grid.cell_height)
+    return;
+
+  gdk_toplevel_size_get_size (size, &width, &height);
+  gdk_toplevel_size_get_min_size (size, &min_width, &min_height);
+
+  if (proposed_width > 0)
+    width = ptyxis_grid_size_snap (width, min_width, proposed_width,
+                                   self->grid.base_width, cell_width);
+  if (proposed_height > 0)
+    height = ptyxis_grid_size_snap (height, min_height, proposed_height,
+                                    self->grid.base_height, cell_height);
+
+  gdk_toplevel_size_set_size_for_proposal (size, width, height);
+}
+
+static void
+ptyxis_window_update_grid (PtyxisWindow *self)
+{
+  GdkSurface *surface = gtk_native_get_surface (GTK_NATIVE (self));
+  PtyxisTab *tab;
+  PtyxisTerminal *terminal;
+  int terminal_width, terminal_height;
+
+  if (surface == NULL ||
+      adw_tab_overview_get_open (self->tab_overview) ||
+      self->tab_overview_animating ||
+      adw_application_window_get_visible_dialog (ADW_APPLICATION_WINDOW (self)) != NULL ||
+      !(tab = ptyxis_window_get_active_tab (self)))
+    {
+      g_clear_weak_pointer (&self->grid.terminal);
+      return;
+    }
+
+  terminal = ptyxis_tab_get_terminal (tab);
+  terminal_width = gtk_widget_get_width (GTK_WIDGET (terminal));
+  terminal_height = gtk_widget_get_height (GTK_WIDGET (terminal));
+
+  if (terminal_width <= 0 || terminal_height <= 0)
+    {
+      g_clear_weak_pointer (&self->grid.terminal);
+      return;
+    }
+
+  g_set_weak_pointer (&self->grid.terminal, terminal);
+  self->grid.state = gdk_toplevel_get_state (GDK_TOPLEVEL (surface)) & grid_state_mask;
+  self->grid.base_width = gdk_surface_get_width (surface) - terminal_width;
+  self->grid.base_height = gdk_surface_get_height (surface) - terminal_height;
+  self->grid.cell_width = vte_terminal_get_char_width (VTE_TERMINAL (terminal));
+  self->grid.cell_height = vte_terminal_get_char_height (VTE_TERMINAL (terminal));
+  self->grid.tab_bar_visible = gtk_widget_get_visible (GTK_WIDGET (self->tab_bar));
+  self->grid.find_bar_revealed = gtk_revealer_get_reveal_child (self->find_bar_revealer);
+}
+
+static void
 ptyxis_window_realize (GtkWidget *widget)
 {
   PtyxisWindow *self = (PtyxisWindow *)widget;
@@ -1175,6 +1285,12 @@ ptyxis_window_realize (GtkWidget *widget)
   GTK_WIDGET_CLASS (ptyxis_window_parent_class)->realize (widget);
 
   toplevel = GDK_TOPLEVEL (gtk_native_get_surface (GTK_NATIVE (self)));
+
+  g_signal_connect_object (toplevel,
+                           "compute-size",
+                           G_CALLBACK (ptyxis_window_compute_size_cb),
+                           self,
+                           G_CONNECT_AFTER | G_CONNECT_SWAPPED);
 
   g_signal_connect_object (toplevel,
                            "notify::state",
@@ -1940,6 +2056,8 @@ ptyxis_window_size_allocate (GtkWidget *widget,
 
       self->reset_nonvisible_from_size_allocate = FALSE;
     }
+
+  ptyxis_window_update_grid (self);
 }
 
 static void
@@ -1948,6 +2066,8 @@ ptyxis_window_dispose (GObject *object)
   PtyxisWindow *self = (PtyxisWindow *)object;
 
   self->disposed = TRUE;
+
+  g_clear_weak_pointer (&self->grid.terminal);
 
   g_action_map_remove_action (G_ACTION_MAP (self), "interface-style");
 
