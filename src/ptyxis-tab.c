@@ -2415,13 +2415,17 @@ ptyxis_tab_get_progress (PtyxisTab *self)
           return PTYXIS_TAB_PROGRESS_ERROR;
 
         case VTE_PROGRESS_HINT_PAUSED:
+          return PTYXIS_TAB_PROGRESS_PAUSED;
+
         case VTE_PROGRESS_HINT_INDETERMINATE:
-        default:
           return PTYXIS_TAB_PROGRESS_INDETERMINATE;
+
+        default:
+          return PTYXIS_TAB_PROGRESS_UNKNOWN;
         }
     }
 
-  return PTYXIS_TAB_PROGRESS_INDETERMINATE;
+  return PTYXIS_TAB_PROGRESS_NONE;
 }
 
 double
@@ -2513,11 +2517,20 @@ ptyxis_tab_dup_indicator_icon (PtyxisTab *self)
 
   progress = ptyxis_tab_get_progress (self);
 
+  if (progress == PTYXIS_TAB_PROGRESS_NONE)
+    return NULL;
+
+  if (progress == PTYXIS_TAB_PROGRESS_UNKNOWN)
+    return g_themed_icon_new ("dialog-question-symbolic");
+
   if (progress == PTYXIS_TAB_PROGRESS_ERROR)
     return g_themed_icon_new ("dialog-error-symbolic");
 
   if (progress == PTYXIS_TAB_PROGRESS_INDETERMINATE)
-    return NULL;
+    return g_themed_icon_new ("info-symbolic");
+
+  if (progress == PTYXIS_TAB_PROGRESS_PAUSED)
+    return g_themed_icon_new ("emblem-important-symbolic");
 
   if (progress == PTYXIS_TAB_PROGRESS_ACTIVE)
     {
