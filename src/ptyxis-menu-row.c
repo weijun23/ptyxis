@@ -34,6 +34,7 @@ struct _PtyxisMenuRow
   gpointer   item;
   GBinding  *binding;
 
+  GtkImage  *image;
   GtkLabel  *label;
 };
 
@@ -123,6 +124,7 @@ ptyxis_menu_row_class_init (PtyxisMenuRowClass *klass)
 
   gtk_widget_class_set_template_from_resource (widget_class, "/org/gnome/Ptyxis/ptyxis-menu-row.ui");
   gtk_widget_class_set_layout_manager_type (widget_class, GTK_TYPE_BIN_LAYOUT);
+  gtk_widget_class_bind_template_child (widget_class, PtyxisMenuRow, image);
   gtk_widget_class_bind_template_child (widget_class, PtyxisMenuRow, label);
 }
 
@@ -144,6 +146,8 @@ void
 ptyxis_menu_row_set_item (PtyxisMenuRow *self,
                           gpointer       item)
 {
+  const char *icon_name = NULL;
+
   g_return_if_fail (PTYXIS_IS_MENU_ROW (self));
   g_return_if_fail (!item || G_IS_OBJECT (item));
 
@@ -162,6 +166,8 @@ ptyxis_menu_row_set_item (PtyxisMenuRow *self,
     {
       const char *id = ptyxis_ipc_container_get_id (self->item);
 
+      icon_name = ptyxis_ipc_container_get_icon_name (self->item);
+
       if (g_strcmp0 (id, "session") == 0)
         gtk_label_set_label (self->label, _("My Computer"));
       else
@@ -173,6 +179,9 @@ ptyxis_menu_row_set_item (PtyxisMenuRow *self,
     {
       self->binding = g_object_ref (g_object_bind_property (self->item, "label", self->label, "label", G_BINDING_SYNC_CREATE));
     }
+
+  gtk_image_set_from_icon_name (self->image, icon_name);
+  gtk_widget_set_visible (GTK_WIDGET (self->image), icon_name != NULL && icon_name[0] != 0);
 
   g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_ITEM]);
 }
