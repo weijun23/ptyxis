@@ -98,7 +98,38 @@ enum {
   N_SIGNALS
 };
 
-G_DEFINE_FINAL_TYPE (PtyxisTerminal, ptyxis_terminal, VTE_TYPE_TERMINAL)
+static void ptyxis_terminal_scrollable_init (GtkScrollableInterface *iface);
+
+G_DEFINE_FINAL_TYPE_WITH_CODE (PtyxisTerminal, ptyxis_terminal, VTE_TYPE_TERMINAL,
+                               G_IMPLEMENT_INTERFACE (GTK_TYPE_SCROLLABLE,
+                                                      ptyxis_terminal_scrollable_init))
+
+static GtkOverscrollBehavior
+ptyxis_terminal_get_overscroll_behavior (GtkScrollable  *scrollable,
+                                         GtkOrientation  orientation)
+{
+  g_assert (PTYXIS_IS_TERMINAL (scrollable));
+
+  if (orientation == GTK_ORIENTATION_VERTICAL)
+    return GTK_OVERSCROLL_BEHAVIOR_CONTAIN;
+
+  return GTK_OVERSCROLL_BEHAVIOR_NONE;
+}
+
+static void
+ptyxis_terminal_overscroll_changed (GtkScrollable *scrollable)
+{
+  g_assert (PTYXIS_IS_TERMINAL (scrollable));
+
+  gtk_widget_queue_draw (GTK_WIDGET (scrollable));
+}
+
+static void
+ptyxis_terminal_scrollable_init (GtkScrollableInterface *iface)
+{
+  iface->get_overscroll_behavior = ptyxis_terminal_get_overscroll_behavior;
+  iface->overscroll_changed = ptyxis_terminal_overscroll_changed;
+}
 
 static GParamSpec *properties [N_PROPS];
 static guint signals[N_SIGNALS];
@@ -1160,7 +1191,9 @@ ptyxis_terminal_size_allocate (GtkWidget *widget,
  * the terminal. However, afterwards, it rewrites the snapshot to
  * both optimize a large window draw (by removing the color node
  * similar to what vte_terminal_set_clear_background() would do) as
- * well as removing the toplevel clip node.
+ * well as removing the toplevel clip node. VTE snapshots our child
+ * widgets before its own content. The fixed overlays are removed here
+ * and drawn separately, while the size label moves with the terminal.
  *
  * By doing so, we allow our PtyxisTerminal widget to have padding
  * in the normal case (so that it fits rounded corners well) but also
@@ -1168,7 +1201,8 @@ ptyxis_terminal_size_allocate (GtkWidget *widget,
  */
 static void
 ptyxis_terminal_rewrite_snapshot (GtkWidget   *widget,
-                                  GtkSnapshot *snapshot)
+                                  GtkSnapshot *snapshot,
+                                  GArray      *overlay_nodes)
 {
   g_autoptr(GtkSnapshot) alternate = NULL;
   g_autoptr(GskRenderNode) root = NULL;
@@ -1194,6 +1228,9 @@ ptyxis_terminal_rewrite_snapshot (GtkWidget   *widget,
           GskRenderNode *node = gsk_container_node_get_child (root, i);
           GskRenderNodeType node_type = gsk_render_node_get_node_type (node);
 
+          if (i < overlay_nodes->len && g_array_index (overlay_nodes, gboolean, i))
+            continue;
+
           /* Drop the color node because we get that for free from our
            * background recoloring. This avoids an extra large overdraw
            * as a bonus optimization while we fix clipping.
@@ -1217,6 +1254,10 @@ ptyxis_terminal_rewrite_snapshot (GtkWidget   *widget,
           g_ptr_array_add (children, node);
         }
     }
+  else if (overlay_nodes->len > 0 && g_array_index (overlay_nodes, gboolean, 0))
+    {
+      return;
+    }
   else if (gsk_render_node_get_node_type (root) == GSK_COLOR_NODE)
     {
       /* If we got a color node then we are probably blinking a cursor on
@@ -1228,9 +1269,12 @@ ptyxis_terminal_rewrite_snapshot (GtkWidget   *widget,
       return;
     }
 
-  if (children->len > 0)
+  if (gsk_render_node_get_node_type (root) == GSK_CONTAINER_NODE)
     {
       GskRenderNode *new_root;
+
+      if (children->len == 0)
+        return;
 
       new_root = gsk_container_node_new ((GskRenderNode **)children->pdata, children->len);
       gsk_render_node_unref (root);
@@ -1245,10 +1289,46 @@ ptyxis_terminal_snapshot (GtkWidget   *widget,
                           GtkSnapshot *snapshot)
 {
   PtyxisTerminal *self = PTYXIS_TERMINAL (widget);
+  g_autoptr(GtkSnapshot) overlay_snapshot = NULL;
+  g_autoptr(GskRenderNode) overlay = NULL;
+  g_autoptr(GArray) overlay_nodes = NULL;
   GtkBorder padding;
+  double overscroll_y = 0;
 
   g_assert (PTYXIS_IS_TERMINAL (self));
   g_assert (GTK_IS_SNAPSHOT (snapshot));
+
+  overlay_snapshot = gtk_snapshot_new ();
+  overlay_nodes = g_array_new (FALSE, FALSE, sizeof (gboolean));
+
+  for (GtkWidget *child = gtk_widget_get_first_child (widget);
+       child != NULL;
+       child = gtk_widget_get_next_sibling (child))
+    {
+      g_autoptr(GtkSnapshot) child_snapshot = gtk_snapshot_new ();
+      g_autoptr(GskRenderNode) child_node = NULL;
+      gboolean fixed_overlay;
+      guint n_nodes;
+
+      gtk_widget_snapshot_child (widget, child, child_snapshot);
+      child_node = gtk_snapshot_free_to_node (g_steal_pointer (&child_snapshot));
+
+      if (child_node == NULL)
+        continue;
+
+      fixed_overlay = child == GTK_WIDGET (self->hover_uri_revealer) ||
+                      child == self->drop_highlight;
+      n_nodes = gsk_render_node_get_node_type (child_node) == GSK_CONTAINER_NODE ?
+                gsk_container_node_get_n_children (child_node) : 1;
+
+      for (guint i = 0; i < n_nodes; i++)
+        g_array_append_val (overlay_nodes, fixed_overlay);
+
+      if (fixed_overlay)
+        gtk_snapshot_append_node (overlay_snapshot, child_node);
+    }
+
+  overlay = gtk_snapshot_free_to_node (g_steal_pointer (&overlay_snapshot));
 
   G_GNUC_BEGIN_IGNORE_DEPRECATIONS
   gtk_style_context_get_padding (gtk_widget_get_style_context (widget), &padding);
@@ -1259,12 +1339,15 @@ ptyxis_terminal_snapshot (GtkWidget   *widget,
                                                -padding.top,
                                                gtk_widget_get_width (widget) + 4,
                                                padding.top + gtk_widget_get_height (widget) + padding.bottom));
-  ptyxis_terminal_rewrite_snapshot (widget, snapshot);
+  gtk_scrollable_get_overscroll (GTK_SCROLLABLE (self), NULL, &overscroll_y);
+  gtk_snapshot_save (snapshot);
+  gtk_snapshot_translate (snapshot, &GRAPHENE_POINT_INIT (0, overscroll_y));
+  ptyxis_terminal_rewrite_snapshot (widget, snapshot, overlay_nodes);
+  gtk_snapshot_restore (snapshot);
   gtk_snapshot_pop (snapshot);
 
-  gtk_widget_snapshot_child (widget, GTK_WIDGET (self->size_revealer), snapshot);
-  gtk_widget_snapshot_child (widget, GTK_WIDGET (self->hover_uri_revealer), snapshot);
-  gtk_widget_snapshot_child (widget, GTK_WIDGET (self->drop_highlight), snapshot);
+  if (overlay != NULL)
+    gtk_snapshot_append_node (snapshot, overlay);
 }
 
 static void
