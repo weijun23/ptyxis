@@ -454,7 +454,59 @@ paste_clipboard_action (GtkWidget  *widget,
 static void
 ptyxis_terminal_selection_changed (VteTerminal *terminal)
 {
-  ptyxis_terminal_update_clipboard_actions (PTYXIS_TERMINAL (terminal));
+  PtyxisTerminal *self = PTYXIS_TERMINAL (terminal);
+
+  ptyxis_terminal_update_clipboard_actions (self);
+
+  /* 选中即复制：仅在 copy-on-select 开启时生效 */
+  if (vte_terminal_get_has_selection (terminal))
+    {
+      PtyxisSettings *settings = ptyxis_application_get_settings (PTYXIS_APPLICATION_DEFAULT);
+
+      if (ptyxis_settings_get_copy_on_select (settings))
+        {
+          GdkClipboard *clipboard = gtk_widget_get_clipboard (GTK_WIDGET (terminal));
+          g_autofree char *text = vte_terminal_get_text_selected (terminal, VTE_FORMAT_TEXT);
+
+          if (text != NULL && text[0] != 0)
+            {
+              gdk_clipboard_set_text (clipboard, text);
+
+              if (ptyxis_settings_get_toast_on_copy_clipboard (settings))
+                ptyxis_terminal_toast (self, 1, _("Copied to clipboard"));
+            }
+        }
+    }
+}
+
+static void
+ptyxis_terminal_paste_pressed_cb (PtyxisTerminal  *self,
+                                   int              n_press,
+                                   double           x,
+                                   double           y,
+                                   GtkGestureClick *click)
+{
+  PtyxisSettings *settings;
+
+  g_assert (PTYXIS_IS_TERMINAL (self));
+  g_assert (GTK_IS_GESTURE_CLICK (click));
+
+  /* 仅在 copy-on-select 开启时拦截右键做粘贴，否则放行让 context-menu 弹出 */
+  settings = ptyxis_application_get_settings (PTYXIS_APPLICATION_DEFAULT);
+  if (!ptyxis_settings_get_copy_on_select (settings))
+    {
+      gtk_gesture_set_state (GTK_GESTURE (click), GTK_EVENT_SEQUENCE_DENIED);
+      return;
+    }
+
+  /* 右键粘贴：先清除选中再粘贴 */
+  if (vte_terminal_get_has_selection (VTE_TERMINAL (self)))
+    vte_terminal_unselect_all (VTE_TERMINAL (self));
+
+  ptyxis_terminal_paste (self);
+
+  /* 阻止事件继续传播，避免弹出上下文菜单 */
+  gtk_gesture_set_state (GTK_GESTURE (click), GTK_EVENT_SEQUENCE_CLAIMED);
 }
 
 static void
@@ -1392,6 +1444,7 @@ ptyxis_terminal_class_init (PtyxisTerminalClass *klass)
   gtk_widget_class_bind_template_callback (widget_class, ptyxis_terminal_drop_target_drag_enter);
   gtk_widget_class_bind_template_callback (widget_class, ptyxis_terminal_drop_target_drag_leave);
   gtk_widget_class_bind_template_callback (widget_class, ptyxis_terminal_drop_target_drop);
+  gtk_widget_class_bind_template_callback (widget_class, ptyxis_terminal_paste_pressed_cb);
 
   gtk_widget_class_install_action (widget_class, "clipboard.copy", NULL, copy_clipboard_action);
   gtk_widget_class_install_action (widget_class, "clipboard.copy-as-html", NULL, copy_clipboard_action);

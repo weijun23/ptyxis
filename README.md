@@ -345,6 +345,35 @@ security posture.
   - Named profiles for default container, startup commands, appearance
     (font, palette), terminal behaviors, and compatibility modes.
 
+### Terminal Behavior GSettings
+
+Several terminal behaviors can be fine-tuned directly via `gsettings`. These
+options are **not enabled by default** — run the commands below to activate
+them.
+
+#### Copy on Select & Right-Click to Paste
+
+When enabled, selecting text with the mouse automatically copies it to the
+clipboard, and **right-clicking** pastes from the clipboard instead of
+opening the context menu. This mirrors the behavior of X11 terminals that
+use the primary selection.
+
+```bash
+# Enable (default is false)
+gsettings set org.gnome.Ptyxis copy-on-select true
+
+# Disable
+gsettings set org.gnome.Ptyxis copy-on-select false
+```
+
+You can combine this with `toast-on-copy-clipboard` to control whether a
+brief notification appears whenever text is copied:
+
+```bash
+gsettings set org.gnome.Ptyxis toast-on-copy-clipboard true   # default
+gsettings set org.gnome.Ptyxis toast-on-copy-clipboard false
+```
+
 ---
 
 ## How It Works (Agent-UI Interaction & Fallbacks)

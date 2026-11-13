@@ -220,6 +220,12 @@
       <description>Show the user when text has copied to the clipboard.</description>
     </key>
 
+    <key name="copy-on-select" type="b">
+      <default>false</default>
+      <summary>Copy on Select &amp; Right-Click to Paste</summary>
+      <description>When enabled, selecting text with the mouse automatically copies it to the clipboard, and right-click pastes from the clipboard instead of showing the context menu.</description>
+    </key>
+
     <key name="enable-a11y" type="b">
       <default>false</default>
       <summary>Enable Accessibility</summary>

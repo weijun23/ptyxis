@@ -57,6 +57,7 @@ enum {
   PROP_TAB_MIDDLE_CLICK,
   PROP_TEXT_BLINK_MODE,
   PROP_TOAST_ON_COPY_CLIPBOARD,
+  PROP_COPY_ON_SELECT,
   PROP_USE_SYSTEM_FONT,
   PROP_VISUAL_BELL,
   PROP_VISUAL_PROCESS_LEADER,
@@ -114,6 +115,8 @@ ptyxis_settings_changed_cb (PtyxisSettings *self,
     g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_DEFAULT_ROWS]);
   else if (g_str_equal (key, PTYXIS_SETTING_KEY_TOAST_ON_COPY_CLIPBOARD))
     g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_TOAST_ON_COPY_CLIPBOARD]);
+  else if (g_str_equal (key, PTYXIS_SETTING_KEY_COPY_ON_SELECT))
+    g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_COPY_ON_SELECT]);
   else if (g_str_equal (key, PTYXIS_SETTING_KEY_ENABLE_A11Y))
     g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_ENABLE_A11Y]);
   else if (g_str_equal (key, PTYXIS_SETTING_KEY_ENABLE_ZOOM_SCROLL_CTRL))
@@ -240,6 +243,10 @@ ptyxis_settings_get_property (GObject    *object,
       g_value_set_boolean (value, ptyxis_settings_get_toast_on_copy_clipboard (self));
       break;
 
+    case PROP_COPY_ON_SELECT:
+      g_value_set_boolean (value, ptyxis_settings_get_copy_on_select (self));
+      break;
+
     case PROP_USE_SYSTEM_FONT:
       g_value_set_boolean (value, ptyxis_settings_get_use_system_font (self));
       break;
@@ -349,6 +356,10 @@ ptyxis_settings_set_property (GObject      *object,
 
     case PROP_TOAST_ON_COPY_CLIPBOARD:
       ptyxis_settings_set_toast_on_copy_clipboard (self, g_value_get_boolean (value));
+      break;
+
+    case PROP_COPY_ON_SELECT:
+      ptyxis_settings_set_copy_on_select (self, g_value_get_boolean (value));
       break;
 
     case PROP_USE_SYSTEM_FONT:
@@ -533,6 +544,13 @@ ptyxis_settings_class_init (PtyxisSettingsClass *klass)
   properties[PROP_TOAST_ON_COPY_CLIPBOARD] =
     g_param_spec_boolean (PTYXIS_SETTING_KEY_TOAST_ON_COPY_CLIPBOARD, NULL, NULL,
                           TRUE,
+                          (G_PARAM_READWRITE |
+                           G_PARAM_EXPLICIT_NOTIFY |
+                           G_PARAM_STATIC_STRINGS));
+
+  properties[PROP_COPY_ON_SELECT] =
+    g_param_spec_boolean (PTYXIS_SETTING_KEY_COPY_ON_SELECT, NULL, NULL,
+                          FALSE,
                           (G_PARAM_READWRITE |
                            G_PARAM_EXPLICIT_NOTIFY |
                            G_PARAM_STATIC_STRINGS));
@@ -1215,4 +1233,23 @@ ptyxis_settings_get_inhibit_logout (PtyxisSettings *self)
 
   return g_settings_get_boolean (self->settings,
                                  PTYXIS_SETTING_KEY_INHIBIT_LOGOUT);
+}
+
+gboolean
+ptyxis_settings_get_copy_on_select (PtyxisSettings *self)
+{
+  g_return_val_if_fail (PTYXIS_IS_SETTINGS (self), FALSE);
+
+  return g_settings_get_boolean (self->settings, PTYXIS_SETTING_KEY_COPY_ON_SELECT);
+}
+
+void
+ptyxis_settings_set_copy_on_select (PtyxisSettings *self,
+                                    gboolean        copy_on_select)
+{
+  g_return_if_fail (PTYXIS_IS_SETTINGS (self));
+
+  g_settings_set_boolean (self->settings,
+                          PTYXIS_SETTING_KEY_COPY_ON_SELECT,
+                          copy_on_select);
 }

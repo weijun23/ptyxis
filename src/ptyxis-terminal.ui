@@ -117,6 +117,13 @@
       </object>
     </child>
     <child>
+      <object class="GtkGestureClick" id="right_click_paste">
+        <signal name="pressed" handler="ptyxis_terminal_paste_pressed_cb" swapped="1" object="PtyxisTerminal"/>
+        <property name="button">3</property>
+        <property name="propagation-phase">capture</property>
+      </object>
+    </child>
+    <child>
       <object class="GtkEventControllerKey" id="key_controller">
         <signal name="key-pressed" handler="ptyxis_terminal_capture_key_pressed_cb" swapped="1" object="PtyxisTerminal"/>
         <property name="propagation-phase">capture</property>
